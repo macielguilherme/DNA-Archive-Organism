@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#05070c"
+    >
+
+    <meta
+        name="description"
+        content="DNA — Arquivo Vivo. Uma experiência visual que transforma estruturas arquivísticas em um organismo digital interativo."
+    >
+
+    <title>DNA — Arquivo Vivo</title>
+
+    <!-- =========================================================
+         ESTILOS
+    ========================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="css/organism.css"
+    >
+</head>
+
+<body>
+
+    <!-- =========================================================
+         APLICAÇÃO
+    ========================================================== -->
+
+    <div
+        class="app"
+        id="app"
+    >
+
+        <!-- =====================================================
+             AMBIENTE
+        ====================================================== -->
+
+        <div
+            class="ambient"
+            aria-hidden="true"
+        >
+
+            <div class="ambient__stars"></div>
+
+            <div class="ambient__glow"></div>
+
+            <div class="ambient__grid"></div>
+
+            <div class="ambient__noise"></div>
+
+        </div>
+
+
+        <!-- =====================================================
+             TOPO
+        ====================================================== -->
+
+        <header class="topbar">
+
+            <div class="topbar__brand">
+
+                <div
+                    class="brand-mark"
+                    aria-hidden="true"
+                >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+
+                <div class="brand-copy">
+
+                    <div class="brand-copy__title">
+                        DNA
+                    </div>
+
+                    <div class="brand-copy__subtitle">
+                        ARQUIVO VIVO
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="topbar__center">
+
+                <div class="system-title">
+                    ORGANISMO ARQUIVÍSTICO DIGITAL
+                </div>
+
+                <div class="system-description">
+                    Estrutura documental em estado vivo
+                </div>
+
+            </div>
+
+
+            <div
+                class="system-status"
+                data-status="stable"
+            >
+
+                <span
+                    class="system-status__indicator"
+                    aria-hidden="true"
+                ></span>
+
+                <span class="system-status__label">
+                    AGUARDANDO DOCUMENTO
+                </span>
+
+                <div class="system-status__tools" aria-label="Ferramentas do arquivo">
+                    <button type="button" class="topbar-tool" data-action="archive-toggle" aria-label="Abrir central do arquivo" title="Central do arquivo">▤ <span>ARQUIVO</span></button>
+                    <button type="button" class="topbar-tool topbar-tool--ai" data-action="ai-settings" aria-label="Configurar análise inteligente" title="Configurar análise inteligente">✦ <span>IA</span></button>
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- =====================================================
+             CONTEÚDO PRINCIPAL
+        ====================================================== -->
+
+        <main class="main">
+
+            <!-- =================================================
+                 ORGANISMO
+            ================================================== -->
+
+            <section
+                class="organism-stage"
+                aria-label="Organismo arquivístico"
+            >
+
+                <!-- Canvas principal -->
+                <canvas
+                    class="organism-canvas"
+                    aria-label="Atlas do arquivo vivo. Fólios representam documentos; caminhos curvos representam relações registradas. Arraste para percorrer e use a roda para aproximar."
+                    role="img"
+                    tabindex="0"
+                ></canvas>
+
+                <div class="archive-map-key" aria-hidden="true">
+                    <span class="archive-map-key__folio"></span>
+                    <span>FÓLIOS DO ACERVO</span>
+                    <span class="archive-map-key__thread"></span>
+                    <span>VÍNCULOS DE MEMÓRIA</span>
+                </div>
+                <!-- Canvas de efeitos -->
+                <canvas
+                    class="effects-canvas"
+                    aria-hidden="true"
+                ></canvas>
+
+
+                <!-- Núcleo central -->
+
+                <div class="organism-empty-state" aria-live="polite">
+                    <div class="organism-empty-state__eyebrow">SISTEMA PRONTO</div>
+                    <strong>INSIRA UM DOCUMENTO</strong>
+                    <span>O organismo será construído a partir dos dados reais do arquivo.</span>
+                    <button type="button" class="button button--primary" data-action="inject">
+                        + INJETAR DOCUMENTO
+                    </button>
+                </div>
+
+                <div class="organism-core">
+
+                    <div class="core__outer-ring"></div>
+
+                    <div class="core__middle-ring"></div>
+
+                    <div class="core__inner-ring"></div>
+
+                    <div class="core__pulse"></div>
+
+                    <div class="core__center">
+
+                        <div class="core__symbol">
+                            DNA
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Identificação -->
+
+                <div class="organism-label">
+
+                    <span class="organism-label__title">
+                        ORGANISMO
+                    </span>
+
+                    <span class="organism-label__subtitle">
+                        ARQUIVO VIVO
+                    </span>
+
+                </div>
+
+
+                <!-- Mira central -->
+
+                <div
+                    class="organism-crosshair"
+                    aria-hidden="true"
+                >
+
+                    <span class="crosshair__horizontal"></span>
+
+                    <span class="crosshair__vertical"></span>
+
+                </div>
+
+
+                <!-- Coordenadas -->
+
+                <div class="coordinate-readout">
+
+                    <span>
+                        X: <strong data-coordinate-x>0000</strong>
+                    </span>
+
+                    <span>
+                        Y: <strong data-coordinate-y>0000</strong>
+                    </span>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 HUD ESQUERDO
+            ================================================== -->
+
+            <aside
+                class="hud hud--left"
+                aria-label="Informações do arquivo"
+            >
+
+                <!-- Resumo -->
+
+                <section class="hud-panel archive-summary">
+
+                    <div class="panel-heading">
+
+                        <div class="panel-heading__title">
+                            ARQUIVO
+                        </div>
+
+                        <div class="panel-heading__code">
+                            01
+                        </div>
+
+                    </div>
+
+
+                    <div class="archive-total">
+
+                        <span
+                            class="archive-total__value"
+                            data-metric="total"
+                        >
+                            0
+                        </span>
+
+                        <span class="archive-total__label">
+                            DOCUMENTOS
+                        </span>
+
+                    </div>
+
+
+                    <div class="archive-meta">
+
+                        <div class="archive-meta__item">
+
+                            <span>
+                                ATIVOS
+                            </span>
+
+                            <strong data-metric="active">
+                                0
+                            </strong>
+
+                        </div>
+
+                        <div class="archive-meta__item">
+
+                            <span>
+                                —S
+                            </span>
+
+                            <strong data-metric="permanent">
+                                0
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- Saúde -->
+
+                <section class="hud-panel health-panel">
+
+                    <div class="panel-heading">
+
+                        <div class="panel-heading__title">
+                            INTEGRIDADE
+                        </div>
+
+                        <div class="panel-heading__code">
+                            02
+                        </div>
+
+                    </div>
+
+
+                    <div class="health-panel__score">
+
+                        <span
+                            data-health-score
+                        >
+                            N/A
+                        </span>
+
+                        <small>
+                            %
+                        </small>
+
+                    </div>
+
+
+                    <div
+                        class="health-panel__label"
+                        data-health-label
+                    >
+                        NO DATA
+                    </div>
+
+
+                    <div
+                        class="progress-bar"
+                        role="progressbar"
+                        aria-label="Integridade do sistema"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                        aria-valuenow="0"
+                    >
+
+                        <div
+                            class="progress-bar__fill"
+                            data-health-progress
+                            style="width: 0%;"
+                        ></div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- Estrutura -->
+
+                <section class="hud-panel metric-list">
+
+                    <div class="panel-heading">
+
+                        <div class="panel-heading__title">
+                            ESTRUTURA
+                        </div>
+
+                        <div class="panel-heading__code">
+                            03
+                        </div>
+
+                    </div>
+
+
+                    <div class="metric-list__item">
+
+                        <span>
+                            CONEXÕES
+                        </span>
+
+                        <strong data-metric="connections">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="metric-list__item">
+
+                        <span>
+                            CÉLULAS
+                        </span>
+
+                        <strong data-metric="cells">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="metric-list__item">
+
+                        <span>
+                            DENSIDADE
+                        </span>
+
+                        <strong data-metric="density">
+                            0%
+                        </strong>
+
+                    </div>
+
+
+                    <div class="metric-list__item">
+
+                        <span>
+                            ATIVIDADE
+                        </span>
+
+                        <strong data-metric="activity">
+                            0%
+                        </strong>
+
+                    </div>
+
+                </section>
+
+
+                <!-- Risco -->
+
+                <section class="hud-panel risk-panel">
+
+                    <div class="panel-heading">
+
+                        <div class="panel-heading__title">
+                            EXPOSIÇÃO
+                        </div>
+
+                        <div class="panel-heading__code">
+                            04
+                        </div>
+
+                    </div>
+
+
+                    <div class="risk-panel__value">
+
+                        <strong data-risk-exposure>
+                            N/A
+                        </strong>
+
+                    </div>
+
+
+                    <div
+                        class="risk-panel__label"
+                        data-risk-level
+                    >
+                        NO DATA
+                    </div>
+
+                </section>
+
+            </aside>
+
+
+            <!-- =================================================
+                 HUD DIREITO
+            ================================================== -->
+
+            <aside
+                class="hud hud--right"
+                aria-label="Atividade do organismo"
+            >
+
+                <!-- Eventos -->
+
+                <section class="hud-panel event-panel">
+
+                    <div class="panel-heading">
+
+                        <div class="panel-heading__title">
+                            ATIVIDADE
+                        </div>
+
+                        <div class="panel-heading__code">
+                            LIVE
+                        </div>
+
+                    </div>
+
+
+                    <div class="event-list">
+
+                        <div class="event-list__item">
+
+                            <div class="event-list__marker"></div>
+
+                            <div class="event-list__content">
+
+                                <div class="event-list__time">
+                                    AGORA
+                                </div>
+
+                                <div class="event-list__title">
+                                    AGUARDANDO DOCUMENTO
+                                </div>
+
+                                <div class="event-list__description">
+                                    Nenhum documento foi inserido.
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="event-list__item">
+
+                            <div class="event-list__marker"></div>
+
+                            <div class="event-list__content">
+
+                                <div class="event-list__time">
+                                    SISTEMA
+                                </div>
+
+                                <div class="event-list__title">
+                                    MEMÓRIA VAZIA
+                                </div>
+
+                                <div class="event-list__description">
+                                    Insira um documento para iniciar o organismo.
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- Ações -->
+
+                <section class="hud-panel actions-panel">
+
+                    <div class="panel-heading">
+
+                        <div class="panel-heading__title">
+                            CONTROLE
+                        </div>
+
+                        <div class="panel-heading__code">
+                            SYS
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="action-button"
+                        id="inject-data"
+                        data-action="inject"
+                    >
+
+                        <span
+                            class="action-button__icon"
+                            aria-hidden="true"
+                        >
+                            +
+                        </span>
+
+                        <span class="action-button__content">
+
+                            <strong>
+                                INJETAR DADOS
+                            </strong>
+
+                            <small>
+                                ADICIONAR NOVA MEMÓRIA
+                            </small>
+
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="action-button"
+                        id="reset-data"
+                        data-action="reset"
+                    >
+
+                        <span
+                            class="action-button__icon"
+                            aria-hidden="true"
+                        >
+                            ↻
+                        </span>
+
+                        <span class="action-button__content">
+
+                            <strong>
+                                RESTAURAR
+                            </strong>
+
+                            <small>
+                                ESTADO INICIAL
+                            </small>
+
+                        </span>
+
+                    </button>
+
+                </section>
+
+            </aside>
+
+
+            <!-- =================================================
+                 TIMELINE
+            ================================================== -->
+
+            <section
+                class="timeline"
+                data-timeline="archive-evolution"
+                aria-label="Linha do tempo evolutiva"
+            >
+
+                <div class="timeline__header">
+
+                    <div class="timeline__title">
+                        EVOLUÇÃO DO ORGANISMO
+                    </div>
+
+                    <div
+                        class="timeline__label"
+                    >
+                        EVOLUÇÃO 2026
+                    </div>
+
+                </div>
+
+
+                <div class="timeline__track">
+
+                    <div
+                        class="timeline__progress"
+                    ></div>
+
+
+                    <div
+                        class="timeline__markers"
+                    ></div>
+
+
+                    <input
+                        id="evolution-slider"
+                        class="timeline__slider"
+                        type="range"
+                        min="1950"
+                        max="2026"
+                        step="1"
+                        value="2026"
+                        aria-label="Ano de evolução do organismo"
+                    />
+
+                </div>
+
+
+                <div class="timeline__years">
+
+                    <span>
+                        —
+                    </span>
+
+                    <span
+                        data-timeline-year
+                        class="timeline__current"
+                    >
+                        —
+                    </span>
+
+                    <span>
+                        2026
+                    </span>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 STATUS INFERIOR
+            ================================================== -->
+
+            <footer class="bottom-status">
+
+                <div class="bottom-status__item">
+
+                    <span class="bottom-status__indicator"></span>
+
+                    <span>
+                        SISTEMA PRONTO
+                    </span>
+
+                </div>
+
+
+                <div class="bottom-status__item">
+
+                    <span>
+                        MEMÓRIA:
+                    </span>
+
+                    <strong data-memory-status>
+                        VAZIA
+                    </strong>
+
+                </div>
+
+
+                <div class="bottom-status__item">
+
+                    <span>
+                        CONEXÕES:
+                    </span>
+
+                    <strong data-status-connections>
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="bottom-status__item">
+
+                    <span>
+                        NÚCLEOS:
+                    </span>
+
+                    <strong data-status-cells>
+                        0
+                    </strong>
+
+                </div>
+
+            </footer>
+
+        </main>
+
+
+        <!-- =====================================================
+             PAINEL DE DOCUMENTO
+        ====================================================== -->
+
+        <aside
+            class="document-panel"
+            id="document-panel"
+            aria-hidden="true"
+            aria-label="Informações do documento"
+        >
+
+            <div class="document-panel__header">
+
+                <div>
+
+                    <div class="document-panel__eyebrow">
+                        NÓ DOCUMENTAL
+                    </div>
+
+                    <h2 class="document-panel__title">
+                        DOCUMENTO
+                    </h2>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="document-panel__close"
+                    id="close-document"
+                    aria-label="Fechar documento"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div class="document-panel__body">
+
+                <div class="document-panel__identifier">
+
+                    <span>
+                        ID
+                    </span>
+
+                    <strong data-document-id>
+                        —
+                    </strong>
+
+                </div>
+
+
+                <div class="document-panel__grid">
+
+                    <div class="document-field">
+
+                        <span>
+                            TIPO
+                        </span>
+
+                        <strong data-document-type>
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="document-field">
+
+                        <span>
+                            CLASSIFICAÇÃO
+                        </span>
+
+                        <strong data-document-class>
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="document-field">
+
+                        <span>
+                            ANO
+                        </span>
+
+                        <strong data-document-year>
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="document-field">
+
+                        <span>
+                            DESTINAÇÃO
+                        </span>
+
+                        <strong data-document-retention>
+                            —
+                        </strong>
+
+                    </div>
+
+                    <div class="document-field">
+                        <span>TAMANHO</span>
+                        <strong data-document-size>—</strong>
+                    </div>
+
+                    <div class="document-field">
+                        <span>TIPO MIME</span>
+                        <strong data-document-mime>—</strong>
+                    </div>
+
+                </div>
+
+
+                <div class="document-integrity">
+
+                    <div class="document-integrity__header">
+
+                        <span>
+                            INTEGRIDADE
+                        </span>
+
+                        <strong data-document-integrity>
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="progress-bar">
+
+                        <div
+                            class="progress-bar__fill"
+                            style="width: 0%;"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="document-relationships">
+
+                    <span>
+                        RELACIONAMENTOS
+                    </span>
+
+                    <strong
+                        data-document-relationships
+                    >
+                        0
+                    </strong>
+
+                </div>
+
+                <div class="document-relationships">
+                    <span>ANÁLISE</span>
+                    <strong data-document-extraction>—</strong>
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <!-- =====================================================
+             MODAL DE INJEÇÃO
+        ====================================================== -->
+
+        <div
+            class="modal"
+            id="injection-modal"
+            aria-hidden="true"
+        >
+
+            <div class="modal__backdrop"></div>
+
+            <div
+                class="modal__content"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="injection-title"
+            >
+
+                <div class="modal__header">
+
+                    <div>
+
+                        <div class="modal__eyebrow">
+                            SISTEMA
+                        </div>
+
+                        <h2
+                            class="modal__title"
+                            id="injection-title"
+                        >
+                            INJETAR DADOS
+                        </h2>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="modal__close"
+                        aria-label="Fechar"
+                    >
+                        ×
+                    </button>
+
+                </div>
+
+
+                <div class="modal__body">
+
+                    <div
+                        class="drop-zone"
+                        id="drop-zone"
+                    >
+
+                        <div
+                            class="drop-zone__icon"
+                            aria-hidden="true"
+                        >
+                            +
+                        </div>
+
+                        <div class="drop-zone__title">
+                            SOLTE UM DOCUMENTO
+                        </div>
+
+                        <div class="drop-zone__description">
+                            Arraste um arquivo para o organismo
+                            ou selecione manualmente.
+                        </div>
+
+                        <input
+                            type="file"
+                            id="file-input"
+                            multiple
+                            accept=".pdf,.txt,.json,.csv,.xml,.html,.htm,.md,.markdown,.log,text/plain,application/json,text/csv,application/xml,text/xml,text/html,text/markdown,application/pdf"
+                            hidden
+                        >
+
+                        <button
+                            type="button"
+                            class="button button--primary"
+                            data-action="select-file"
+                        >
+                            SELECIONAR ARQUIVO
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        class="injection-status"
+                        aria-live="polite"
+                    >
+
+                        <div class="injection-status__header">
+
+                            <span>
+                                PROCESSAMENTO
+                            </span>
+
+                            <span>
+                                <strong>
+                                    <span
+                                        class="injection-status__percentage"
+                                    >
+                                        0
+                                    </span>%
+                                </strong>
+                            </span>
+
+                        </div>
+
+
+                        <div class="progress-bar">
+
+                            <div
+                                class="injection-status__progress"
+                                style="width: 0%;"
+                            ></div>
+
+                        </div>
+
+
+                        <div
+                            class="injection-status__message"
+                        >
+                            AGUARDANDO DOCUMENTO...
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             NOTIFICAÇÃO
+        ====================================================== -->
+
+        <div
+            class="notification"
+            id="notification"
+            aria-live="polite"
+            aria-atomic="true"
+        >
+
+            <div
+                class="notification__indicator"
+                aria-hidden="true"
+            ></div>
+
+            <div class="notification__message">
+                SISTEMA PRONTO
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             TOOLTIP DE NÓ
+        ====================================================== -->
+
+        <div
+            class="node-tooltip"
+            aria-hidden="true"
+        >
+
+            <div class="node-tooltip__header">
+
+                <span class="node-tooltip__type">
+                    NÓ
+                </span>
+
+                <strong class="node-tooltip__id">
+                    #000000
+                </strong>
+
+            </div>
+
+
+            <div class="node-tooltip__body">
+
+                <div>
+                    <span>
+                        TIPO
+                    </span>
+
+                    <strong data-tooltip-type>
+                        DOCUMENTO
+                    </strong>
+                </div>
+
+
+                <div>
+                    <span>
+                        CLASSE
+                    </span>
+
+                    <strong data-tooltip-class>
+                        —
+                    </strong>
+                </div>
+
+
+                <div>
+                    <span>
+                        ANO
+                    </span>
+
+                    <strong data-tooltip-year>
+                        —
+                    </strong>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             MODAL DE CONFIRMAÇÃO
+        ====================================================== -->
+
+        <div
+            class="confirm-modal"
+            aria-hidden="true"
+        >
+
+            <div class="confirm-modal__content">
+
+                <div class="confirm-modal__header">
+
+                    <div class="confirm-modal__eyebrow">
+                        CONFIRMAÇÃO
+                    </div>
+
+                    <h2>
+                        Restaurar organismo?
+                    </h2>
+
+                </div>
+
+
+                <div class="confirm-modal__body">
+
+                    <p>
+                        O estado atual do organismo será
+                        substituído pelo estado inicial.
+                    </p>
+
+                </div>
+
+
+                <div class="confirm-modal__actions">
+
+                    <button
+                        type="button"
+                        class="button"
+                        data-confirm="cancel"
+                    >
+                        CANCELAR
+                    </button>
+
+                    <button
+                        type="button"
+                        class="button button--primary"
+                        data-confirm="accept"
+                    >
+                        RESTAURAR
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             MODAL INFORMATIVO
+        ====================================================== -->
+
+        <div
+            class="info-modal"
+            aria-hidden="true"
+        >
+
+            <div class="info-modal__content">
+
+                <div class="info-modal__header">
+
+                    <div>
+
+                        <div class="info-modal__eyebrow">
+                            DNA
+                        </div>
+
+                        <h2>
+                            Arquivo Vivo
+                        </h2>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="info-modal__close"
+                        aria-label="Fechar"
+                    >
+                        ×
+                    </button>
+
+                </div>
+
+
+                <div class="info-modal__body">
+
+                    <p>
+                        Uma experiência visual que transforma
+                        estruturas arquivísticas em um organismo
+                        digital interativo.
+                    </p>
+
+
+                    <div class="info-modal__section">
+
+                        <span>
+                            CÉREBRO / NÚCLEO
+                        </span>
+
+                        <p>
+                            Contexto e memória do arquivo.
+                        </p>
+
+                    </div>
+
+
+                    <div class="info-modal__section">
+
+                        <span>
+                            CORAÇÃO
+                        </span>
+
+                        <p>
+                            Documentos em atividade.
+                        </p>
+
+                    </div>
+
+
+                    <div class="info-modal__section">
+
+                        <span>
+                            DNA
+                        </span>
+
+                        <p>
+                            Relações entre documentos.
+                        </p>
+
+                    </div>
+
+
+                    <div class="info-modal__section">
+
+                        <span>
+                            ESQUELETO
+                        </span>
+
+                        <p>
+                            Classificação e estrutura.
+                        </p>
+
+                    </div>
+
+
+                    <div class="info-modal__section">
+
+                        <span>
+                            MEMBRANA
+                        </span>
+
+                        <p>
+                            Preservação documental.
+                        </p>
+
+                    </div>
+
+
+                    <div class="info-modal__section">
+
+                        <span>
+                            DECOMPOSIÇÃO
+                        </span>
+
+                        <p>
+                            Destinação dos documentos.
+                        </p>
+
+                    </div>
+
+
+                    <div class="info-modal__technology">
+
+                        <span>
+                            TECNOLOGIAS
+                        </span>
+
+                        <div>
+                            HTML · CSS · JavaScript · Canvas API
+                            · LocalStorage · Drag & Drop · Web APIs
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         SCRIPTS
+    ========================================================== -->
+
+    <script src="js/app.js?v=3"></script>
+
+    <script src="js/storage.js?v=3"></script>
+
+    <script src="js/documents.js?v=2"></script>
+
+    <script src="js/connections.js"></script>
+
+    <script src="js/interaction.js"></script>
+
+    <script src="js/organism.js?v=4"></script>
+
+    <script src="js/particles.js"></script>
+
+    <script src="js/timeline.js"></script>
+
+    <script src="js/ui.js"></script>
+
+    <script src="js/archive.js"></script>
+
+    <script src="js/gemini.js?v=3"></script>
+
+</body>
+</html>

@@ -1,0 +1,2339 @@
+/* ============================================================
+   DNA — ARQUIVO VIVO
+   ORGANISM VISUAL SYSTEM
+   ============================================================
+
+   Responsabilidade deste arquivo:
+
+   - células
+   - estruturas
+   - conexões
+   - ramificações
+   - zonas
+   - sinais
+   - partículas
+   - ondas
+   - estados do organismo
+   - seleção
+   - scanner
+   - evolução visual
+
+   IMPORTANTE:
+   Este arquivo NÃO controla:
+
+   - topbar
+   - HUD
+   - timeline
+   - bottom-status
+   - document-panel
+   - modais
+   - layout geral
+
+   O posicionamento principal pertence ao style.css.
+   ============================================================ */
+
+
+/* ============================================================
+   01. VARIÁVEIS DO ORGANISMO
+   ============================================================ */
+
+:root {
+
+    --organism-blue:
+        #46b8ff;
+
+    --organism-blue-bright:
+        #8bdcff;
+
+    --organism-blue-soft:
+        rgba(70, 184, 255, 0.42);
+
+    --organism-cyan:
+        #55e6ff;
+
+    --organism-violet:
+        #a678ff;
+
+    --organism-violet-bright:
+        #c6a7ff;
+
+    --organism-orange:
+        #ff9d4d;
+
+    --organism-orange-bright:
+        #ffc17e;
+
+    --organism-red:
+        #ff5268;
+
+    --organism-red-bright:
+        #ff8495;
+
+    --organism-green:
+        #6ee7a8;
+
+    --organism-dark:
+        #030a11;
+
+    --organism-deep:
+        #02060b;
+
+    --organism-line:
+        rgba(70, 184, 255, 0.22);
+
+    --organism-line-soft:
+        rgba(70, 184, 255, 0.10);
+
+    --organism-line-strong:
+        rgba(85, 230, 255, 0.48);
+
+    --organism-glow:
+        0 0 22px rgba(70, 184, 255, 0.30);
+
+    --organism-glow-strong:
+        0 0 38px rgba(70, 184, 255, 0.42);
+}
+
+
+/* ============================================================
+   02. STAGE
+   ============================================================ */
+
+.organism-stage {
+    isolation: isolate;
+    pointer-events: auto;
+}
+
+
+/*
+ * Camadas Canvas
+ */
+
+.organism-canvas,
+.effects-canvas {
+    image-rendering:
+        auto;
+
+    will-change:
+        contents;
+}
+
+.organism-canvas {
+    pointer-events: auto;
+    touch-action: none;
+    cursor: crosshair;
+    outline: none;
+}
+
+.organism-canvas:focus-visible {
+    outline: 1px solid rgba(85, 230, 255, .55);
+    outline-offset: -3px;
+}
+
+.organism-empty-state {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 9;
+    display: flex;
+    width: min(360px, calc(100% - 40px));
+    transform: translate(-50%, -50%);
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 24px;
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    background: rgba(5, 11, 19, 0.88);
+    color: var(--text-soft);
+    text-align: center;
+    pointer-events: auto;
+}
+
+.organism-empty-state strong {
+    color: var(--text);
+    letter-spacing: 0.12em;
+}
+
+.organism-empty-state button {
+    pointer-events: auto;
+}
+
+.organism-empty-state[hidden] {
+    display: none !important;
+}
+
+.organism-stage.is-empty .organism-core {
+    visibility: hidden;
+    opacity: 0;
+}
+
+.organism-stage {
+    background:
+        radial-gradient(ellipse at 50% 48%, rgba(24, 65, 91, .12), transparent 52%),
+        radial-gradient(circle at center, rgba(8, 24, 38, .18), transparent 72%);
+}
+
+.organism-stage::after {
+    content: "";
+    position: absolute;
+    inset: 8%;
+    z-index: 0;
+    border: 1px solid rgba(82, 166, 207, .035);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.organism-stage::after,
+.organism-core,
+.organism-crosshair {
+    display: none !important;
+}
+
+.organism-empty-state {
+    border-color: rgba(85, 230, 255, .2);
+    background: linear-gradient(145deg, rgba(8, 22, 34, .94), rgba(3, 9, 16, .94));
+    box-shadow: 0 20px 70px rgba(0, 0, 0, .38), 0 0 38px rgba(43, 163, 220, .06);
+    backdrop-filter: blur(16px);
+}
+
+.organism-node {
+    transition: box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.organism-node:hover,
+.organism-node.is-selected {
+    border-color: var(--organism-cyan);
+    background: rgba(85, 230, 255, .24);
+    box-shadow: 0 0 10px rgba(85, 230, 255, .5), 0 0 28px rgba(70, 184, 255, .25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .organism-node { transition: none; }
+}
+
+
+/* ============================================================
+   03. ORGANISMO GERADO PELO JS
+   ============================================================ */
+
+/*
+ * O JavaScript pode criar nós usando classes como:
+
+ .organism-node
+ .organism-cell
+ .organism-branch
+ .organism-connection
+ .organism-zone
+ .organism-signal
+
+ Estas regras funcionam tanto para elementos HTML quanto
+ como referência visual complementar ao Canvas.
+ */
+
+
+/* ============================================================
+   04. NÓ PRINCIPAL
+   ============================================================ */
+
+.organism-node {
+    position: absolute;
+
+    width: 10px;
+    height: 10px;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    border:
+        1px solid
+        var(--organism-blue);
+
+    border-radius: 50%;
+
+    background:
+        rgba(70, 184, 255, 0.14);
+
+    box-shadow:
+        0 0 8px rgba(70, 184, 255, 0.32);
+
+    pointer-events: auto;
+
+    cursor: pointer;
+
+    user-select: none;
+
+    z-index: 4;
+}
+
+.organism-node::before {
+    content: "";
+
+    position: absolute;
+
+    inset: -4px;
+
+    border:
+        1px solid
+        rgba(70, 184, 255, 0.12);
+
+    border-radius: 50%;
+
+    pointer-events: none;
+}
+
+.organism-node::after {
+    content: "";
+
+    position: absolute;
+
+    inset: 2px;
+
+    border-radius: 50%;
+
+    background:
+        rgba(139, 220, 255, 0.62);
+
+    box-shadow:
+        0 0 7px rgba(139, 220, 255, 0.55);
+}
+
+
+/* ============================================================
+   05. TAMANHOS DE CÉLULAS
+   ============================================================ */
+
+.organism-node--tiny {
+    width: 5px;
+    height: 5px;
+}
+
+.organism-node--small {
+    width: 7px;
+    height: 7px;
+}
+
+.organism-node--medium {
+    width: 11px;
+    height: 11px;
+}
+
+.organism-node--large {
+    width: 15px;
+    height: 15px;
+}
+
+.organism-node--core {
+    width: 21px;
+    height: 21px;
+}
+
+
+/* ============================================================
+   06. DOCUMENTO PERMANENTE
+   ============================================================ */
+
+.organism-node[data-retention="PERMANENTE"],
+.organism-node--permanent {
+
+    border-color:
+        var(--organism-blue);
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(70, 184, 255, 0.28),
+            rgba(70, 184, 255, 0.035)
+        );
+
+    box-shadow:
+        0 0 10px rgba(70, 184, 255, 0.36);
+}
+
+.organism-node[data-retention="PERMANENTE"]::after,
+.organism-node--permanent::after {
+
+    background:
+        var(--organism-blue-bright);
+
+    box-shadow:
+        0 0 10px
+        rgba(139, 220, 255, 0.70);
+}
+
+
+/* ============================================================
+   07. DOCUMENTO TEMPORÁRIO
+   ============================================================ */
+
+.organism-node[data-retention="TEMPORÁRIO"],
+.organism-node[data-retention="TEMPORARIO"],
+.organism-node--temporary {
+
+    border-color:
+        var(--organism-violet);
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(166, 120, 255, 0.27),
+            rgba(166, 120, 255, 0.035)
+        );
+
+    box-shadow:
+        0 0 11px
+        rgba(166, 120, 255, 0.32);
+}
+
+.organism-node[data-retention="TEMPORÁRIO"]::after,
+.organism-node[data-retention="TEMPORARIO"]::after,
+.organism-node--temporary::after {
+
+    background:
+        var(--organism-violet-bright);
+
+    box-shadow:
+        0 0 9px
+        rgba(198, 167, 255, 0.70);
+}
+
+
+/* ============================================================
+   08. DESTINAÇÃO / WARNING
+   ============================================================ */
+
+.organism-node[data-state="warning"],
+.organism-node[data-state="destination"],
+.organism-node--warning,
+.organism-node--destination {
+
+    border-color:
+        var(--organism-orange);
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(255, 157, 77, 0.28),
+            rgba(255, 157, 77, 0.035)
+        );
+
+    box-shadow:
+        0 0 13px
+        rgba(255, 157, 77, 0.40);
+}
+
+.organism-node[data-state="warning"]::after,
+.organism-node[data-state="destination"]::after,
+.organism-node--warning::after,
+.organism-node--destination::after {
+
+    background:
+        var(--organism-orange-bright);
+
+    box-shadow:
+        0 0 11px
+        rgba(255, 193, 126, 0.72);
+}
+
+
+/* ============================================================
+   09. NÓ DOENTE / INCONSISTENTE
+   ============================================================ */
+
+.organism-node[data-state="sick"],
+.organism-node[data-state="error"],
+.organism-node--sick,
+.organism-node--error {
+
+    border-color:
+        var(--organism-red);
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(255, 82, 104, 0.32),
+            rgba(255, 82, 104, 0.035)
+        );
+
+    box-shadow:
+        0 0 16px
+        rgba(255, 82, 104, 0.48);
+}
+
+.organism-node[data-state="sick"]::after,
+.organism-node[data-state="error"]::after,
+.organism-node--sick::after,
+.organism-node--error::after {
+
+    background:
+        var(--organism-red-bright);
+
+    box-shadow:
+        0 0 12px
+        rgba(255, 132, 149, 0.75);
+}
+
+
+/* ============================================================
+   10. NÓ ATIVO
+   ============================================================ */
+
+.organism-node[data-state="active"],
+.organism-node--active {
+
+    border-color:
+        var(--organism-cyan);
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(85, 230, 255, 0.34),
+            rgba(85, 230, 255, 0.04)
+        );
+
+    box-shadow:
+        0 0 18px
+        rgba(85, 230, 255, 0.52);
+}
+
+.organism-node[data-state="active"]::after,
+.organism-node--active::after {
+
+    background:
+        #b4f5ff;
+
+    box-shadow:
+        0 0 14px
+        rgba(85, 230, 255, 0.9);
+}
+
+
+/* ============================================================
+   11. HOVER
+   ============================================================ */
+
+.organism-node:hover {
+
+    border-color:
+        #c9f3ff;
+
+    box-shadow:
+        0 0 18px
+        rgba(85, 230, 255, 0.58);
+
+    z-index: 20;
+}
+
+.organism-node:hover::before {
+
+    border-color:
+        rgba(139, 220, 255, 0.34);
+}
+
+
+/* ============================================================
+   12. SELEÇÃO
+   ============================================================ */
+
+.organism-node.is-selected,
+.organism-node[data-selected="true"] {
+
+    border-color:
+        #ffffff;
+
+    box-shadow:
+        0 0 0 1px
+        rgba(139, 220, 255, 0.30),
+        0 0 18px
+        rgba(85, 230, 255, 0.62);
+
+    z-index: 30;
+}
+
+.organism-node.is-selected::before,
+.organism-node[data-selected="true"]::before {
+
+    inset: -7px;
+
+    border-color:
+        rgba(85, 230, 255, 0.45);
+}
+
+
+/* ============================================================
+   13. ESTRUTURA DE CÉLULA
+   ============================================================ */
+
+.organism-cell {
+    position: absolute;
+
+    width: 18px;
+    height: 18px;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    border:
+        1px solid
+        rgba(70, 184, 255, 0.22);
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(70, 184, 255, 0.14),
+            transparent 68%
+        );
+
+    pointer-events: none;
+
+    z-index: 3;
+}
+
+.organism-cell::before {
+
+    content: "";
+
+    position: absolute;
+
+    inset: 4px;
+
+    border:
+        1px solid
+        rgba(139, 220, 255, 0.24);
+
+    border-radius: 50%;
+}
+
+.organism-cell::after {
+
+    content: "";
+
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    width: 3px;
+    height: 3px;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    border-radius: 50%;
+
+    background:
+        rgba(139, 220, 255, 0.75);
+
+    box-shadow:
+        0 0 8px
+        rgba(139, 220, 255, 0.6);
+}
+
+
+/* ============================================================
+   14. NÚCLEO CELULAR
+   ============================================================ */
+
+.organism-cell__nucleus {
+
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    width: 5px;
+    height: 5px;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    border-radius: 50%;
+
+    background:
+        var(--organism-blue-bright);
+
+    box-shadow:
+        0 0 10px
+        rgba(139, 220, 255, 0.75);
+}
+
+
+/* ============================================================
+   15. RAMIFICAÇÕES
+   ============================================================ */
+
+.organism-branch {
+
+    position: absolute;
+
+    height: 1px;
+
+    transform-origin:
+        left center;
+
+    pointer-events: none;
+
+    z-index: 2;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(70, 184, 255, 0.05),
+            rgba(70, 184, 255, 0.34),
+            rgba(85, 230, 255, 0.04)
+        );
+
+    box-shadow:
+        0 0 8px
+        rgba(70, 184, 255, 0.14);
+}
+
+.organism-branch::after {
+
+    content: "";
+
+    position: absolute;
+
+    right: 0;
+    top: 50%;
+
+    width: 3px;
+    height: 3px;
+
+    transform:
+        translateY(-50%);
+
+    border-radius: 50%;
+
+    background:
+        var(--organism-blue-bright);
+
+    box-shadow:
+        0 0 8px
+        rgba(139, 220, 255, 0.62);
+}
+
+
+/* ============================================================
+   16. BRANCHES VIOLETAS
+   ============================================================ */
+
+.organism-branch--temporary {
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(166, 120, 255, 0.03),
+            rgba(166, 120, 255, 0.35),
+            rgba(166, 120, 255, 0.03)
+        );
+
+    box-shadow:
+        0 0 8px
+        rgba(166, 120, 255, 0.15);
+}
+
+.organism-branch--temporary::after {
+
+    background:
+        var(--organism-violet-bright);
+
+    box-shadow:
+        0 0 9px
+        rgba(198, 167, 255, 0.65);
+}
+
+
+/* ============================================================
+   17. BRANCHES ORANGE
+   ============================================================ */
+
+.organism-branch--warning {
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(255, 157, 77, 0.03),
+            rgba(255, 157, 77, 0.40),
+            rgba(255, 157, 77, 0.03)
+        );
+
+    box-shadow:
+        0 0 9px
+        rgba(255, 157, 77, 0.16);
+}
+
+.organism-branch--warning::after {
+
+    background:
+        var(--organism-orange-bright);
+
+    box-shadow:
+        0 0 9px
+        rgba(255, 193, 126, 0.68);
+}
+
+
+/* ============================================================
+   18. BRANCHES VERMELHAS
+   ============================================================ */
+
+.organism-branch--sick {
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(255, 82, 104, 0.02),
+            rgba(255, 82, 104, 0.45),
+            rgba(255, 82, 104, 0.02)
+        );
+
+    box-shadow:
+        0 0 10px
+        rgba(255, 82, 104, 0.20);
+}
+
+.organism-branch--sick::after {
+
+    background:
+        var(--organism-red-bright);
+
+    box-shadow:
+        0 0 10px
+        rgba(255, 132, 149, 0.72);
+}
+
+
+/* ============================================================
+   19. CONEXÕES
+   ============================================================ */
+
+.organism-connection {
+
+    position: absolute;
+
+    height: 1px;
+
+    transform-origin:
+        left center;
+
+    pointer-events: none;
+
+    z-index: 1;
+
+    background:
+        rgba(70, 184, 255, 0.16);
+}
+
+.organism-connection::before {
+
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    top: 50%;
+
+    width: 3px;
+    height: 3px;
+
+    transform:
+        translateY(-50%);
+
+    border-radius: 50%;
+
+    background:
+        rgba(85, 230, 255, 0.7);
+}
+
+
+/* ============================================================
+   20. CONEXÃO FORTE
+   ============================================================ */
+
+.organism-connection[data-strength="strong"],
+.organism-connection--strong {
+
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(70, 184, 255, 0.06),
+            rgba(70, 184, 255, 0.48),
+            rgba(85, 230, 255, 0.08)
+        );
+
+    box-shadow:
+        0 0 7px
+        rgba(70, 184, 255, 0.18);
+}
+
+
+/* ============================================================
+   21. CONEXÃO ATIVA
+   ============================================================ */
+
+.organism-connection.is-active,
+.organism-connection[data-active="true"] {
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(139, 220, 255, 0.85),
+            transparent
+        );
+
+    box-shadow:
+        0 0 11px
+        rgba(85, 230, 255, 0.38);
+}
+
+
+/* ============================================================
+   22. ZONAS
+   ============================================================ */
+
+.organism-zone {
+
+    position: absolute;
+
+    border-radius: 50%;
+
+    pointer-events: none;
+
+    z-index: 0;
+
+    border:
+        1px solid
+        rgba(70, 184, 255, 0.05);
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(70, 184, 255, 0.035),
+            transparent 68%
+        );
+}
+
+.organism-zone--core {
+
+    border-color:
+        rgba(85, 230, 255, 0.09);
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(85, 230, 255, 0.055),
+            transparent 70%
+        );
+}
+
+.organism-zone--temporary {
+
+    border-color:
+        rgba(166, 120, 255, 0.07);
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(166, 120, 255, 0.035),
+            transparent 70%
+        );
+}
+
+.organism-zone--warning {
+
+    border-color:
+        rgba(255, 157, 77, 0.07);
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(255, 157, 77, 0.035),
+            transparent 70%
+        );
+}
+
+.organism-zone--sick {
+
+    border-color:
+        rgba(255, 82, 104, 0.10);
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(255, 82, 104, 0.04),
+            transparent 70%
+        );
+}
+
+
+/* ============================================================
+   23. SINAIS
+   ============================================================ */
+
+.organism-signal {
+
+    position: absolute;
+
+    width: 4px;
+    height: 4px;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    border-radius: 50%;
+
+    pointer-events: none;
+
+    background:
+        var(--organism-cyan);
+
+    box-shadow:
+        0 0 10px
+        rgba(85, 230, 255, 0.75);
+}
+
+.organism-signal--violet {
+
+    background:
+        var(--organism-violet-bright);
+
+    box-shadow:
+        0 0 10px
+        rgba(198, 167, 255, 0.72);
+}
+
+.organism-signal--orange {
+
+    background:
+        var(--organism-orange-bright);
+
+    box-shadow:
+        0 0 10px
+        rgba(255, 193, 126, 0.72);
+}
+
+.organism-signal--red {
+
+    background:
+        var(--organism-red-bright);
+
+    box-shadow:
+        0 0 10px
+        rgba(255, 132, 149, 0.75);
+}
+
+
+/* ============================================================
+   24. PARTÍCULAS
+   ============================================================ */
+
+.organism-particle {
+
+    position: absolute;
+
+    width: 2px;
+    height: 2px;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    border-radius: 50%;
+
+    pointer-events: none;
+
+    background:
+        rgba(139, 220, 255, 0.72);
+
+    box-shadow:
+        0 0 7px
+        rgba(85, 230, 255, 0.48);
+
+    z-index: 3;
+}
+
+.organism-particle--large {
+
+    width: 3px;
+    height: 3px;
+
+    background:
+        var(--organism-blue-bright);
+
+    box-shadow:
+        0 0 10px
+        rgba(139, 220, 255, 0.72);
+}
+
+.organism-particle--violet {
+
+    background:
+        var(--organism-violet-bright);
+
+    box-shadow:
+        0 0 8px
+        rgba(198, 167, 255, 0.60);
+}
+
+.organism-particle--orange {
+
+    background:
+        var(--organism-orange-bright);
+
+    box-shadow:
+        0 0 8px
+        rgba(255, 193, 126, 0.62);
+}
+
+.organism-particle--red {
+
+    background:
+        var(--organism-red-bright);
+
+    box-shadow:
+        0 0 8px
+        rgba(255, 132, 149, 0.65);
+}
+
+
+/* ============================================================
+   25. TRAILS
+   ============================================================ */
+
+.organism-particle-trail {
+
+    position: absolute;
+
+    height: 1px;
+
+    transform-origin:
+        left center;
+
+    pointer-events: none;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(85, 230, 255, 0.25),
+            transparent
+        );
+
+    opacity: 0.7;
+
+    z-index: 2;
+}
+
+
+/* ============================================================
+   26. ONDAS DE ENERGIA
+   ============================================================ */
+
+.energy-wave {
+
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    width: 60px;
+    height: 60px;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    border:
+        1px solid
+        rgba(85, 230, 255, 0.28);
+
+    border-radius: 50%;
+
+    pointer-events: none;
+
+    opacity: 0;
+
+    z-index: 2;
+}
+
+.energy-wave--blue {
+
+    border-color:
+        rgba(70, 184, 255, 0.30);
+}
+
+.energy-wave--violet {
+
+    border-color:
+        rgba(166, 120, 255, 0.30);
+}
+
+.energy-wave--orange {
+
+    border-color:
+        rgba(255, 157, 77, 0.30);
+}
+
+.energy-wave--red {
+
+    border-color:
+        rgba(255, 82, 104, 0.32);
+}
+
+
+/* ============================================================
+   27. INJEÇÃO
+   ============================================================ */
+
+.organism-stage[data-injection="true"] {
+
+    --organism-injection-color:
+        var(--organism-cyan);
+}
+
+.organism-stage[data-injection="true"]
+.organism-core {
+
+    filter:
+        drop-shadow(
+            0 0 24px
+            rgba(85, 230, 255, 0.20)
+        );
+}
+
+
+/*
+ * Ponto de entrada da nova memória
+ */
+
+.injection-node {
+
+    position: absolute;
+
+    width: 12px;
+    height: 12px;
+
+    border:
+        1px solid
+        var(--organism-cyan);
+
+    border-radius: 50%;
+
+    background:
+        rgba(85, 230, 255, 0.13);
+
+    box-shadow:
+        0 0 18px
+        rgba(85, 230, 255, 0.58);
+
+    pointer-events: none;
+
+    z-index: 12;
+}
+
+.injection-node::before {
+
+    content: "";
+
+    position: absolute;
+
+    inset: -6px;
+
+    border:
+        1px solid
+        rgba(85, 230, 255, 0.18);
+
+    border-radius: 50%;
+}
+
+
+/* ============================================================
+   28. MEMÓRIA ADQUIRIDA
+   ============================================================ */
+
+.memory-acquired {
+
+    position: absolute;
+
+    width: 18px;
+    height: 18px;
+
+    border:
+        1px solid
+        var(--organism-blue-bright);
+
+    border-radius: 50%;
+
+    background:
+        rgba(70, 184, 255, 0.14);
+
+    box-shadow:
+        0 0 22px
+        rgba(70, 184, 255, 0.58);
+
+    pointer-events: none;
+
+    z-index: 14;
+}
+
+.memory-acquired::before,
+.memory-acquired::after {
+
+    content: "";
+
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    border-radius: 50%;
+
+    border:
+        1px solid
+        rgba(139, 220, 255, 0.32);
+}
+
+.memory-acquired::before {
+
+    width: 28px;
+    height: 28px;
+}
+
+.memory-acquired::after {
+
+    width: 40px;
+    height: 40px;
+
+    opacity: 0.4;
+}
+
+
+/* ============================================================
+   29. ESTADO DE EVOLUÇÃO
+   ============================================================ */
+
+.organism-stage[data-evolution="early"] {
+
+    --organism-density:
+        0.55;
+}
+
+.organism-stage[data-evolution="developing"] {
+
+    --organism-density:
+        0.72;
+}
+
+.organism-stage[data-evolution="advanced"] {
+
+    --organism-density:
+        0.88;
+}
+
+.organism-stage[data-evolution="mature"] {
+
+    --organism-density:
+        1;
+}
+
+
+/* ============================================================
+   30. DENSIDADE
+   ============================================================ */
+
+.organism-stage[data-density="low"]
+.organism-node {
+
+    opacity: 0.72;
+}
+
+.organism-stage[data-density="medium"]
+.organism-node {
+
+    opacity: 0.84;
+}
+
+.organism-stage[data-density="high"]
+.organism-node {
+
+    opacity: 0.96;
+}
+
+
+/* ============================================================
+   31. DOENÇA DO ORGANISMO
+   ============================================================ */
+
+.organism-stage[data-health="critical"] {
+
+    --organism-health-color:
+        var(--organism-red);
+}
+
+.organism-stage[data-health="critical"]
+.organism-zone {
+
+    border-color:
+        rgba(255, 82, 104, 0.10);
+}
+
+
+/* ============================================================
+   32. REGIÃO DOENTE
+   ============================================================ */
+
+.organism-sick-region {
+
+    position: absolute;
+
+    border-radius: 50%;
+
+    pointer-events: none;
+
+    border:
+        1px solid
+        rgba(255, 82, 104, 0.18);
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(255, 82, 104, 0.08),
+            rgba(255, 82, 104, 0.02) 45%,
+            transparent 72%
+        );
+
+    box-shadow:
+        inset 0 0 30px
+        rgba(255, 82, 104, 0.05);
+
+    z-index: 0;
+}
+
+
+/* ============================================================
+   33. RISCO
+   ============================================================ */
+
+.organism-risk-zone {
+
+    position: absolute;
+
+    border:
+        1px dashed
+        rgba(255, 157, 77, 0.18);
+
+    border-radius: 50%;
+
+    background:
+        rgba(255, 157, 77, 0.018);
+
+    pointer-events: none;
+
+    z-index: 0;
+}
+
+
+/* ============================================================
+   34. CLASSIFICAÇÃO
+   ============================================================ */
+
+.organism-classification {
+
+    position: absolute;
+
+    min-width: 40px;
+
+    padding:
+        3px 5px;
+
+    border:
+        1px solid
+        rgba(70, 184, 255, 0.13);
+
+    border-radius: 3px;
+
+    background:
+        rgba(4, 10, 17, 0.66);
+
+    color:
+        rgba(139, 180, 205, 0.58);
+
+    font-family:
+        var(--mono);
+
+    font-size: 6px;
+
+    letter-spacing: 0.08em;
+
+    text-align: center;
+
+    pointer-events: none;
+
+    z-index: 6;
+}
+
+
+/* ============================================================
+   35. RÓTULOS DOS NÓS
+   ============================================================ */
+
+.organism-node-label {
+
+    position: absolute;
+
+    padding:
+        3px 5px;
+
+    color:
+        rgba(148, 188, 210, 0.56);
+
+    font-family:
+        var(--mono);
+
+    font-size: 6px;
+
+    letter-spacing: 0.07em;
+
+    white-space: nowrap;
+
+    pointer-events: none;
+
+    opacity: 0.75;
+
+    z-index: 7;
+}
+
+
+/* ============================================================
+   36. SCAN LINE
+   ============================================================ */
+
+.organism-scan-line {
+
+    position: absolute;
+
+    left: 0;
+    right: 0;
+
+    height: 1px;
+
+    pointer-events: none;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(85, 230, 255, 0.20),
+            transparent
+        );
+
+    opacity: 0.35;
+
+    z-index: 9;
+}
+
+
+/* ============================================================
+   37. MARCADORES DE COORDENADA
+   ============================================================ */
+
+.organism-coordinate-marker {
+
+    position: absolute;
+
+    width: 7px;
+    height: 7px;
+
+    border-left:
+        1px solid
+        rgba(85, 230, 255, 0.32);
+
+    border-top:
+        1px solid
+        rgba(85, 230, 255, 0.32);
+
+    pointer-events: none;
+
+    opacity: 0.65;
+
+    z-index: 3;
+}
+
+
+/* ============================================================
+   38. PONTOS DE REFERÊNCIA
+   ============================================================ */
+
+.organism-reference-point {
+
+    position: absolute;
+
+    width: 3px;
+    height: 3px;
+
+    border-radius: 50%;
+
+    background:
+        rgba(139, 220, 255, 0.42);
+
+    box-shadow:
+        0 0 5px
+        rgba(139, 220, 255, 0.28);
+
+    pointer-events: none;
+
+    z-index: 2;
+}
+
+
+/* ============================================================
+   39. EIXOS
+   ============================================================ */
+
+.organism-axis {
+
+    position: absolute;
+
+    pointer-events: none;
+
+    background:
+        rgba(85, 130, 153, 0.08);
+
+    z-index: 0;
+}
+
+.organism-axis--horizontal {
+
+    height: 1px;
+
+    left: 0;
+    right: 0;
+
+    top: 50%;
+}
+
+.organism-axis--vertical {
+
+    width: 1px;
+
+    top: 0;
+    bottom: 0;
+
+    left: 50%;
+}
+
+
+/* ============================================================
+   40. ANÉIS EXTERNOS
+   ============================================================ */
+
+.organism-ring {
+
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    border:
+        1px solid
+        rgba(70, 184, 255, 0.06);
+
+    border-radius: 50%;
+
+    pointer-events: none;
+
+    z-index: 0;
+}
+
+.organism-ring--small {
+    width: 240px;
+    height: 240px;
+}
+
+.organism-ring--medium {
+    width: 390px;
+    height: 390px;
+}
+
+.organism-ring--large {
+    width: 570px;
+    height: 570px;
+}
+
+.organism-ring--huge {
+    width: 760px;
+    height: 760px;
+}
+
+
+/* ============================================================
+   41. ANÉIS DE REFERÊNCIA
+   ============================================================ */
+
+.organism-ring::before {
+
+    content: "";
+
+    position: absolute;
+
+    top: -3px;
+    left: 50%;
+
+    width: 5px;
+    height: 5px;
+
+    transform:
+        translateX(-50%);
+
+    border-radius: 50%;
+
+    background:
+        rgba(85, 230, 255, 0.35);
+
+    box-shadow:
+        0 0 7px
+        rgba(85, 230, 255, 0.32);
+}
+
+
+/* ============================================================
+   42. ESTADOS DE CONEXÃO
+   ============================================================ */
+
+.organism-connection--permanent {
+
+    background:
+        rgba(70, 184, 255, 0.20);
+}
+
+.organism-connection--temporary {
+
+    background:
+        rgba(166, 120, 255, 0.20);
+}
+
+.organism-connection--warning {
+
+    background:
+        rgba(255, 157, 77, 0.20);
+}
+
+.organism-connection--sick {
+
+    background:
+        rgba(255, 82, 104, 0.23);
+}
+
+
+/* ============================================================
+   43. ESTRUTURA DE DNA
+   ============================================================ */
+
+.dna-helix {
+
+    position: absolute;
+
+    pointer-events: none;
+
+    z-index: 3;
+}
+
+.dna-helix__strand {
+
+    position: absolute;
+
+    width: 1px;
+
+    background:
+        linear-gradient(
+            180deg,
+            transparent,
+            rgba(85, 230, 255, 0.52),
+            transparent
+        );
+}
+
+.dna-helix__bridge {
+
+    position: absolute;
+
+    height: 1px;
+
+    background:
+        rgba(139, 220, 255, 0.26);
+
+    box-shadow:
+        0 0 5px
+        rgba(85, 230, 255, 0.12);
+}
+
+
+/* ============================================================
+   44. MEMBRANA
+   ============================================================ */
+
+.organism-membrane {
+
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    width: 680px;
+    height: 680px;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    border:
+        1px solid
+        rgba(70, 184, 255, 0.055);
+
+    border-radius: 48% 52% 51% 49%;
+
+    background:
+        radial-gradient(
+            circle,
+            transparent 55%,
+            rgba(70, 184, 255, 0.018) 70%,
+            transparent 78%
+        );
+
+    pointer-events: none;
+
+    z-index: 0;
+}
+
+
+/* ============================================================
+   45. MICROESTRUTURAS
+   ============================================================ */
+
+.organism-microstructure {
+
+    position: absolute;
+
+    width: 8px;
+    height: 8px;
+
+    border:
+        1px solid
+        rgba(85, 230, 255, 0.15);
+
+    border-radius: 2px;
+
+    transform:
+        rotate(45deg);
+
+    pointer-events: none;
+
+    z-index: 2;
+}
+
+.organism-microstructure::after {
+
+    content: "";
+
+    position: absolute;
+
+    inset: 2px;
+
+    border-radius: 1px;
+
+    background:
+        rgba(85, 230, 255, 0.10);
+}
+
+
+/* ============================================================
+   46. DESTINAÇÃO
+   ============================================================ */
+
+.organism-destination {
+
+    position: absolute;
+
+    width: 30px;
+    height: 30px;
+
+    border:
+        1px solid
+        rgba(255, 157, 77, 0.25);
+
+    border-radius: 50%;
+
+    background:
+        rgba(255, 157, 77, 0.035);
+
+    pointer-events: none;
+
+    z-index: 2;
+}
+
+.organism-destination::before {
+
+    content: "";
+
+    position: absolute;
+
+    inset: 7px;
+
+    border:
+        1px solid
+        rgba(255, 193, 126, 0.35);
+
+    border-radius: 50%;
+}
+
+.organism-destination::after {
+
+    content: "";
+
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    width: 4px;
+    height: 4px;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    border-radius: 50%;
+
+    background:
+        var(--organism-orange);
+
+    box-shadow:
+        0 0 9px
+        rgba(255, 157, 77, 0.65);
+}
+
+
+/* ============================================================
+   47. INCONSISTÊNCIA
+   ============================================================ */
+
+.organism-inconsistency {
+
+    position: absolute;
+
+    width: 26px;
+    height: 26px;
+
+    border:
+        1px solid
+        rgba(255, 82, 104, 0.26);
+
+    background:
+        rgba(255, 82, 104, 0.04);
+
+    transform:
+        rotate(45deg);
+
+    pointer-events: none;
+
+    z-index: 4;
+}
+
+.organism-inconsistency::before {
+
+    content: "";
+
+    position: absolute;
+
+    inset: 7px;
+
+    border:
+        1px solid
+        rgba(255, 132, 149, 0.40);
+}
+
+
+/* ============================================================
+   48. SINAL DE ALERTA
+   ============================================================ */
+
+.organism-alert {
+
+    position: absolute;
+
+    width: 8px;
+    height: 8px;
+
+    border:
+        1px solid
+        var(--organism-orange);
+
+    transform:
+        rotate(45deg);
+
+    background:
+        rgba(255, 157, 77, 0.08);
+
+    box-shadow:
+        0 0 10px
+        rgba(255, 157, 77, 0.32);
+
+    pointer-events: none;
+
+    z-index: 8;
+}
+
+
+/* ============================================================
+   49. ÁREA DE SELEÇÃO
+   ============================================================ */
+
+.organism-selection {
+
+    position: absolute;
+
+    width: 34px;
+    height: 34px;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    border:
+        1px solid
+        rgba(139, 220, 255, 0.55);
+
+    border-radius: 50%;
+
+    pointer-events: none;
+
+    z-index: 25;
+}
+
+.organism-selection::before,
+.organism-selection::after {
+
+    content: "";
+
+    position: absolute;
+
+    background:
+        rgba(139, 220, 255, 0.60);
+}
+
+.organism-selection::before {
+
+    top: -4px;
+    left: 50%;
+
+    width: 8px;
+    height: 1px;
+
+    transform:
+        translateX(-50%);
+}
+
+.organism-selection::after {
+
+    left: -4px;
+    top: 50%;
+
+    width: 1px;
+    height: 8px;
+
+    transform:
+        translateY(-50%);
+}
+
+
+/* ============================================================
+   50. CAMADA DE PROFUNDIDADE
+   ============================================================ */
+
+.organism-depth-back {
+
+    opacity: 0.28;
+
+    filter:
+        blur(0.2px);
+
+    z-index: 0;
+}
+
+.organism-depth-mid {
+
+    opacity: 0.58;
+
+    z-index: 2;
+}
+
+.organism-depth-front {
+
+    opacity: 1;
+
+    z-index: 8;
+}
+
+
+/* ============================================================
+   51. ESTADO DORMENTE
+   ============================================================ */
+
+.organism-stage[data-state="dormant"]
+.organism-node {
+
+    opacity: 0.45;
+
+    box-shadow:
+        0 0 4px
+        rgba(70, 184, 255, 0.12);
+}
+
+
+/* ============================================================
+   52. ESTADO ATIVO
+   ============================================================ */
+
+.organism-stage[data-state="active"]
+.organism-node {
+
+    opacity: 1;
+}
+
+
+/* ============================================================
+   53. ESTADO DE CRESCIMENTO
+   ============================================================ */
+
+.organism-stage[data-state="growing"]
+.organism-node {
+
+    border-color:
+        var(--organism-cyan);
+}
+
+
+/* ============================================================
+   54. ESTADO DE ALERTA
+   ============================================================ */
+
+.organism-stage[data-state="warning"]
+.organism-node {
+
+    border-color:
+        var(--organism-orange);
+}
+
+
+/* ============================================================
+   55. ESTADO DOENTE
+   ============================================================ */
+
+.organism-stage[data-state="sick"]
+.organism-node {
+
+    border-color:
+        var(--organism-red);
+}
+
+
+/* ============================================================
+   56. EFEITOS DE FOCO
+   ============================================================ */
+
+.organism-node:focus-visible {
+
+    outline:
+        1px solid
+        var(--organism-cyan);
+
+    outline-offset:
+        5px;
+}
+
+
+/* ============================================================
+   57. RESPONSIVIDADE DO ORGANISMO
+   ============================================================ */
+
+@media (max-width: 1280px) {
+
+    .organism-ring--huge {
+        width: 680px;
+        height: 680px;
+    }
+
+    .organism-ring--large {
+        width: 500px;
+        height: 500px;
+    }
+
+    .organism-membrane {
+        width: 590px;
+        height: 590px;
+    }
+}
+
+
+@media (max-width: 1100px) {
+
+    .organism-ring--huge {
+        width: 600px;
+        height: 600px;
+    }
+
+    .organism-ring--large {
+        width: 450px;
+        height: 450px;
+    }
+
+    .organism-ring--medium {
+        width: 320px;
+        height: 320px;
+    }
+
+    .organism-membrane {
+        width: 520px;
+        height: 520px;
+    }
+}
+
+
+/* ============================================================
+   58. REDUCED MOTION
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .organism-node,
+    .organism-cell,
+    .organism-particle,
+    .organism-signal,
+    .energy-wave {
+
+        animation:
+            none !important;
+    }
+}
+
+
+/* ============================================================
+   59. INTEGRIDADE VISUAL
+   ============================================================ */
+
+/*
+ * O organismo deve permanecer abaixo do HUD.
+ *
+ * Não alterar aqui:
+ *
+ * .hud
+ * .timeline
+ * .topbar
+ * .bottom-status
+ *
+ * O Canvas continua sendo o responsável pela maior parte
+ * da visualização dinâmica.
+ */
+
+
+/* ============================================================
+   60. FIM DO SISTEMA VISUAL DO ORGANISMO
+   ============================================================ */
+
+/* Atlas documental: fólios em camadas e vínculos como fios de memória. */
+.archive-map-key {
+    position: absolute;
+    right: 22px;
+    bottom: 18px;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 11px;
+    border: 1px solid rgba(148, 198, 174, .14);
+    border-radius: 999px;
+    background: rgba(5, 15, 17, .72);
+    color: rgba(191, 219, 202, .58);
+    font: 7px/1 ui-monospace, monospace;
+    letter-spacing: .12em;
+    backdrop-filter: blur(12px);
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 260ms ease, transform 260ms ease;
+    pointer-events: none;
+}
+.organism-stage:not(.is-empty) .archive-map-key {
+    opacity: 1;
+    transform: translateY(0);
+}
+.archive-map-key__folio {
+    position: relative;
+    width: 12px;
+    height: 15px;
+    border: 1px solid rgba(135, 219, 183, .7);
+    border-radius: 2px;
+    background: linear-gradient(145deg, rgba(75, 126, 99, .4), rgba(10, 26, 24, .3));
+}
+.archive-map-key__folio::after {
+    content: "";
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 4px;
+    height: 4px;
+    border-left: 1px solid rgba(135, 219, 183, .65);
+    border-bottom: 1px solid rgba(135, 219, 183, .65);
+    background: #10221d;
+}
+.archive-map-key__thread {
+    width: 19px;
+    height: 1px;
+    margin-inline: 5px;
+    background: repeating-linear-gradient(90deg, rgba(129, 224, 196, .8) 0 3px, transparent 3px 6px);
+}
+@media (max-width: 640px) {
+    .archive-map-key { right: 12px; bottom: 12px; gap: 6px; padding: 8px; font-size: 6px; }
+}
