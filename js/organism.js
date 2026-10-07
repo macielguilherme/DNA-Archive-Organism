@@ -199,11 +199,11 @@
             return CONFIG.colors.permanent;
         }
 
-        if (document.destination) {
+        if (document.destination || document.archiveMetadata?.disposition) {
             return CONFIG.colors.warning;
         }
 
-        if (document.classification) {
+        if (document.classification || document.archiveMetadata?.className || document.archiveMetadata?.classCode) {
             return CONFIG.colors.temporary;
         }
 
@@ -235,7 +235,8 @@
             column,
             cardWidth,
             cardHeight,
-            radius: Math.max(cardWidth * 0.52, cardHeight * 0.62, 24),
+            circleRadius: Math.max(22, Math.min(48, Math.min(cellWidth, cellHeight) * 0.29)),
+            radius: Math.max(22, Math.min(48, Math.min(cellWidth, cellHeight) * 0.29)),
             color: documentColor(document),
             document,
             phase: variation * Math.PI * 2
@@ -416,6 +417,23 @@
         state.ctx.restore();
     }
 
+    function drawFieldRings() {
+        if (!state.nodes.length) return;
+        const rect = state.canvas.getBoundingClientRect();
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+        const maxRadius = Math.min(rect.width, rect.height) * .47;
+        state.ctx.save();
+        state.ctx.setLineDash([2, 9]);
+        state.ctx.lineWidth = 1;
+        for (const ratio of [.34, .62, .9]) {
+            state.ctx.beginPath();
+            state.ctx.arc(cx, cy, maxRadius * ratio, 0, Math.PI * 2);
+            state.ctx.strokeStyle = `rgba(70, 184, 255, ${.035 + ratio * .025})`;
+            state.ctx.stroke();
+        }
+        state.ctx.restore();
+    }
     function drawConnections() {
         const connectionList = getConnections();
         if (!connectionList.length) return;
@@ -431,10 +449,10 @@
             const ux = dx / length, uy = dy / length;
             const nx = -uy, ny = ux;
             const bend = Math.min(82, Math.max(20, length * 0.2)) * (index % 2 ? -1 : 1);
-            const startX = source.x + ux * source.cardWidth * 0.43;
-            const startY = source.y + uy * source.cardHeight * 0.36;
-            const endX = target.x - ux * target.cardWidth * 0.43;
-            const endY = target.y - uy * target.cardHeight * 0.36;
+            const startX = source.x + ux * (source.circleRadius || source.radius);
+            const startY = source.y + uy * (source.circleRadius || source.radius);
+            const endX = target.x - ux * (target.circleRadius || target.radius);
+            const endY = target.y - uy * (target.circleRadius || target.radius);
             state.ctx.beginPath();
             state.ctx.moveTo(startX, startY);
             state.ctx.bezierCurveTo(startX + dx * 0.28 + nx * bend, startY + dy * 0.28 + ny * bend, endX - dx * 0.28 + nx * bend, endY - dy * 0.28 + ny * bend, endX, endY);
@@ -458,76 +476,57 @@
         const worldMouseX = (state.mouse.x - rect.width / 2 - state.camera.x) / state.camera.zoom + rect.width / 2;
         const worldMouseY = (state.mouse.y - rect.height / 2 - state.camera.y) / state.camera.zoom + rect.height / 2;
         const selectedId = window.DNADocuments?.state?.selectedId;
-        state.ctx.save();
+        const ctx = state.ctx;
+        ctx.save();
         for (let index = 0; index < state.nodes.length; index++) {
             const node = state.nodes[index];
-            const x = node.x - node.cardWidth / 2;
-            const y = node.y - node.cardHeight / 2;
-            const width = node.cardWidth;
-            const height = node.cardHeight;
-            const hovered = state.mouse.active && Math.hypot(node.x - worldMouseX, node.y - worldMouseY) <= node.radius;
+            const radius = node.circleRadius || node.radius;
+            const hovered = state.mouse.active && Math.hypot(node.x - worldMouseX, node.y - worldMouseY) <= radius;
             const selected = node.id === selectedId;
-            const accent = hovered ? "#d3fff0" : node.color;
-            const radius = Math.min(8, width * 0.12);
-            const ctx = state.ctx;
+            const doc = node.document;
+            const accent = node.color || CONFIG.colors.neutral;
+            const edge = hovered || selected ? "#d3fff0" : accent;
             ctx.save();
-            ctx.shadowColor = hovered || selected ? accent : "rgba(40, 116, 96, .16)";
-            ctx.shadowBlur = hovered || selected ? 18 : 7;
+            ctx.shadowColor = hexToRGBA(accent, hovered || selected ? 0.72 : 0.28);
+            ctx.shadowBlur = hovered || selected ? 24 : 12;
             ctx.beginPath();
-            ctx.roundRect(x, y, width, height, radius);
-            const paper = ctx.createLinearGradient(x, y, x + width, y + height);
-            paper.addColorStop(0, hovered ? "rgba(23, 56, 50, .98)" : "rgba(12, 27, 27, .96)");
-            paper.addColorStop(1, "rgba(7, 17, 20, .98)");
-            ctx.fillStyle = paper;
+            ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+            const fill = ctx.createRadialGradient(node.x - radius * .32, node.y - radius * .38, radius * .06, node.x, node.y, radius);
+            fill.addColorStop(0, hovered ? "rgba(35,82,78,.98)" : "rgba(18,48,55,.96)");
+            fill.addColorStop(1, "rgba(4,13,22,.99)");
+            ctx.fillStyle = fill;
             ctx.fill();
             ctx.shadowBlur = 0;
-            ctx.strokeStyle = hovered || selected ? accent : hexToRGBA(node.color, 0.4);
-            ctx.lineWidth = hovered || selected ? 1.25 : 0.8;
+            ctx.lineWidth = hovered || selected ? 2 : 1.15;
+            ctx.strokeStyle = hovered || selected ? edge : hexToRGBA(accent, .74);
             ctx.stroke();
-            ctx.fillStyle = accent;
-            ctx.globalAlpha = 0.78;
             ctx.beginPath();
-            ctx.roundRect(x + 1.5, y + 7, 2.5, height - 14, 1.2);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-
-            const doc = node.document;
-            const title = String(doc.name || "Documento sem título");
-            const category = String(doc.archiveMetadata?.category || doc.type || "A organizar").toLocaleUpperCase("pt-BR");
-            const serial = `FÓLIO ${String(index + 1).padStart(2, "0")}`;
+            ctx.arc(node.x, node.y, radius * .72, 0, Math.PI * 2);
+            ctx.lineWidth = .7;
+            ctx.strokeStyle = hexToRGBA(accent, hovered || selected ? .46 : .24);
+            ctx.stroke();
+            const abbreviation = String(doc.archiveMetadata?.className || doc.archiveMetadata?.category || doc.type || "AR")
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]).join("").toUpperCase();
+            ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.font = `600 ${Math.max(6, Math.min(8, width * 0.064))}px ui-monospace, monospace`;
-            ctx.fillStyle = hovered ? "rgba(216,255,241,.95)" : "rgba(169,207,192,.64)";
-            ctx.fillText(serial, x + 10, y + height * 0.2, width - 25);
-            ctx.font = `500 ${Math.max(7, Math.min(11, width * 0.085))}px Inter, ui-sans-serif, sans-serif`;
-            ctx.fillStyle = hovered ? "#f1fff9" : "#d8e7df";
-            ctx.fillText(title, x + 10, y + height * 0.49, width - 19);
+            ctx.font = `600 ${Math.max(11, Math.min(18, radius * .54))}px Inter, ui-sans-serif, sans-serif`;
+            ctx.fillStyle = hovered || selected ? "#f1fff9" : hexToRGBA(accent, .94);
+            ctx.fillText(abbreviation || String(index + 1), node.x, node.y - radius * .04, radius * 1.35);
+            ctx.font = `500 ${Math.max(7, Math.min(9, radius * .25))}px ui-monospace, monospace`;
+            ctx.fillStyle = "rgba(197,224,216,.68)";
+            ctx.fillText(String(index + 1).padStart(2, "0"), node.x, node.y + radius * .43);
+            const beadAngle = -Math.PI / 4;
             ctx.beginPath();
-            ctx.moveTo(x + 10, y + height * 0.68);
-            ctx.lineTo(x + width - 10, y + height * 0.68);
-            ctx.strokeStyle = "rgba(180, 218, 200, .15)";
-            ctx.lineWidth = 0.7;
-            ctx.stroke();
-            ctx.font = `600 ${Math.max(5.5, Math.min(7, width * 0.058))}px ui-monospace, monospace`;
-            ctx.fillStyle = hovered ? accent : "rgba(143, 196, 176, .72)";
-            ctx.fillText(category, x + 10, y + height * 0.84, width - 20);
-
-            // Marca de dobra: o documento vira o próprio elemento do mapa.
-            ctx.beginPath();
-            ctx.moveTo(x + width - 14, y + 1);
-            ctx.lineTo(x + width - 1, y + 14);
-            ctx.lineTo(x + width - 14, y + 14);
-            ctx.closePath();
-            ctx.fillStyle = hovered ? "rgba(211,255,240,.28)" : hexToRGBA(node.color, 0.22);
+            ctx.arc(node.x + Math.cos(beadAngle) * radius, node.y + Math.sin(beadAngle) * radius, 2.4, 0, Math.PI * 2);
+            ctx.fillStyle = edge;
             ctx.fill();
             ctx.restore();
             node.renderX = node.x;
             node.renderY = node.y;
-            node.renderRadius = node.radius;
+            node.renderRadius = radius;
         }
-        state.ctx.restore();
+        ctx.restore();
     }
-
     function draw() {
         clear();
         const rect = state.canvas.getBoundingClientRect();
@@ -537,7 +536,7 @@
         state.ctx.translate(cx + state.camera.x, cy + state.camera.y);
         state.ctx.scale(state.camera.zoom, state.camera.zoom);
         state.ctx.translate(-cx, -cy);
-        drawShelfGuides();
+        drawFieldRings();
         drawConnections();
         drawNodes();
         for (const node of state.nodes) {

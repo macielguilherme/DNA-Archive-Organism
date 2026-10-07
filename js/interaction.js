@@ -1106,11 +1106,10 @@ function updateTooltip() {
             documentData
         );
 
-    tooltip.style.left =
-        `${INTERACTION_STATE.pointer.clientX + 16}px`;
-
-    tooltip.style.top =
-        `${INTERACTION_STATE.pointer.clientY + 16}px`;
+    const left = Math.min(INTERACTION_STATE.pointer.clientX + 16, window.innerWidth - tooltip.offsetWidth - 12);
+    const top = Math.min(INTERACTION_STATE.pointer.clientY + 16, window.innerHeight - tooltip.offsetHeight - 12);
+    tooltip.style.left = `${Math.max(12, left)}px`;
+    tooltip.style.top = `${Math.max(12, top)}px`;
 
     tooltip.classList.add(
         "is-visible"
@@ -1122,59 +1121,16 @@ function updateTooltip() {
    27. BUILD TOOLTIP
    ============================================================ */
 
-function buildTooltipHTML(
-    node,
-    documentData
-) {
-
-    if (
-        documentData
-    ) {
-
-        return `
-            <div class="node-tooltip__id">
-                DOCUMENT NODE #${escapeHTML(
-                    documentData.id
-                )}
-            </div>
-
-            <div class="node-tooltip__type">
-                ${escapeHTML(
-                    documentData.type || documentData.detectedType
-                )}
-            </div>
-
-            <div class="node-tooltip__meta">
-                ${escapeHTML(
-                    documentData.classification || "UNKNOWN"
-                )}
-                ·
-                ${escapeHTML(
-                    String(
-                        documentData.analysis?.years?.join(", ") || "UNKNOWN"
-                    )
-                )}
-            </div>
-
-            <div class="node-tooltip__status">
-                ${escapeHTML(
-                    documentData.retention || "UNKNOWN"
-                )}
-            </div>
-        `;
-    }
-
-    return `
-        <div class="node-tooltip__id">
-            NODE ${escapeHTML(
-                node.id
-            )}
-        </div>
-
-        <div class="node-tooltip__type">
-            ORGANISM STRUCTURE
-        </div>
-    `;
+function buildTooltipHTML(node, documentData) {
+    if (!documentData) return `<div class="node-tooltip__title">Documento ${escapeHTML(node.id)}</div>`;
+    const metadata = documentData.archiveMetadata || {};
+    const title = String(documentData.name || "Documento sem título");
+    const generatedSummary = metadata.aiAnalysis?.result?.resumo_completo || metadata.notes || documentData.analysis?.summary || documentData.text || "A IA ainda não analisou este documento.";
+    const summary = String(generatedSummary).replace(/\s+/g, " ").trim();
+    const shortSummary = summary.length > 260 ? `${summary.slice(0, 257)}…` : summary;
+    const category = metadata.className || metadata.category || documentData.detectedType || documentData.type || "Documento";
+    const code = metadata.classCode || "Classe em formação";
+    return `<div class="node-tooltip__header"><strong class="node-tooltip__title">${escapeHTML(title)}</strong><span class="node-tooltip__type">${escapeHTML(documentData.type || documentData.detectedType || "ARQUIVO")}</span></div><div class="node-tooltip__summary">${escapeHTML(shortSummary)}</div><div class="node-tooltip__meta">${escapeHTML(category)} · ${escapeHTML(code)}</div><div class="node-tooltip__status">${escapeHTML(metadata.accessLevel || "PESSOAL")} · ${escapeHTML(metadata.createdDate || "Data não identificada")}</div>`;
 }
 
 

@@ -1,7 +1,7 @@
 /* DNA — Personal Archive workspace and e-ARQ inspired metadata. */
 (() => {
     "use strict";
-    const categories = ["A organizar", "Identidade", "Finanças", "Saúde", "Trabalho", "Estudos", "Moradia", "Jurídico", "Família", "Outros"];
+    let categories = ["A organizar", "Identidade", "Finanças", "Saúde", "Trabalho", "Estudos", "Moradia", "Jurídico", "Família", "Outros"];
     const state = { open: false, view: "overview", query: "", category: "Todas", selected: null, aiResults: {}, integrityResults: {} };
     const escape = value => String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
     const docs = () => window.DNADocuments?.getAll?.() || [];
@@ -52,7 +52,7 @@
         });
         document.addEventListener("dna:documents-changed", render);
         document.addEventListener("dna:document-selected", event => { state.selected = event.detail?.document?.id || state.selected; render(); });
-        document.addEventListener("dna:gemini-analysis", event => { state.aiResults[event.detail.id] = event.detail; if (event.detail.status === "complete") logEvent("GEMINI SUGGESTION", `Análise opcional solicitada para ${event.detail.id}; texto enviado ao Google Gemini.`); if (state.view === "classification") render(); });
+        document.addEventListener("dna:gemini-analysis", event => { state.aiResults[event.detail.id] = event.detail; if (event.detail.status === "complete") logEvent("ARQUIVO ORGANIZADO PELA IA", `Campos arquivísticos preenchidos e salvos automaticamente para ${event.detail.id}.`); if (state.view === "classification") render(); });
         document.addEventListener("keydown", event => { if (event.key === "Escape" && state.open) setOpen(false); });
         render();
     }
@@ -69,6 +69,7 @@
         const root = document.querySelector("#archive-workspace");
         if (!root) return;
         const list = docs();
+        categories = [...new Set(["A organizar", "Identidade", "Finanças", "Saúde", "Trabalho", "Estudos", "Moradia", "Jurídico", "Família", "Outros", ...list.map(item => metadata(item).category).filter(Boolean)])];
         root.querySelector("[data-nav-count]").textContent = String(list.length);
         root.querySelectorAll("[data-archive-view]").forEach(button => button.classList.toggle("is-active", button.dataset.archiveView === state.view));
         const content = root.querySelector("[data-archive-content]");
@@ -111,14 +112,15 @@
         const meta = metadata(doc);
         const isSelected = state.selected === doc.id;
         const ext = (doc.extension || "arquivo").replace(".", "").toUpperCase();
-        return `<button class="archive-document-card ${isSelected ? "is-selected" : ""}" data-archive-select="${escape(doc.id)}"><span class="archive-document-card__icon">${escape(ext.slice(0, 4))}</span><span class="archive-document-card__body"><strong>${escape(doc.name)}</strong><small>${meta.categorySuggested ? "SUGESTÃO · " : ""}${escape(meta.category || "A organizar")} · ${escape(doc.sizeFormatted || "—")}</small><em>${escape((meta.tags || []).slice(0, 3).join(" · ") || doc.extractionStatus || "Sem tags")}</em></span><span class="archive-document-card__arrow">›</span></button>`;
+        return `<button class="archive-document-card ${isSelected ? "is-selected" : ""}" data-archive-select="${escape(doc.id)}"><span class="archive-document-card__icon">${escape(ext.slice(0, 4))}</span><span class="archive-document-card__body"><strong>${escape(doc.name)}</strong><small>${meta.categorySuggested ? "SUGESTÃO · " : ""}${escape(meta.category || "A organizar")} · ${escape(doc.sizeFormatted || "—")}</small><em>${escape([meta.className, ...(meta.tags || []).slice(0, 3)].filter(Boolean).join(" · ") || doc.extractionStatus || "Sem tags")}</em></span><span class="archive-document-card__arrow">›</span></button>`;
     }
 
     function metadataForm(doc) {
         const meta = metadata(doc);
         return `<form class="archive-metadata-form" data-metadata-form="${escape(doc.id)}"><div class="archive-selected-file"><small>DOCUMENTO SELECIONADO</small><strong>${escape(doc.name)}</strong><span>ID ${escape(doc.id)} · ${escape(doc.type)} · CAPTURADO ${escape(fmtDate(doc.createdAt))}</span><button type="button" class="archive-download-button" data-archive-download="${escape(doc.id)}">⇩ Baixar arquivo original</button></div>
             <label>Coleção<select name="category">${categories.map(category => `<option ${category === (meta.category || "A organizar") ? "selected" : ""}>${escape(category)}</option>`).join("")}</select></label>
-            <label>Código de classificação<input name="classCode" value="${escape(meta.classCode)}" placeholder="Ex.: 01.02 — código definido por você"></label>
+            <label>Classe temática<input name="className" list="archive-class-options" value="${escape(meta.className)}" placeholder="Classe pessoal criada a partir do documento"></label><datalist id="archive-class-options">${[...new Set(docs().map(item => metadata(item).className).filter(Boolean))].map(value => `<option value="${escape(value)}"></option>`).join("")}</datalist>
+            <label>Código interno pessoal<input name="classCode" value="${escape(meta.classCode)}" placeholder="Criado automaticamente; não é código e-ARQ"></label>
             <label>Produtor / origem<input name="producer" value="${escape(meta.producer)}" placeholder="Pessoa, instituição ou origem"></label>
             <label>Data do documento<input name="createdDate" value="${escape(meta.createdDate)}" placeholder="Confirme a data manualmente">${meta.dateCandidate ? `<small class="archive-date-candidate">Data localizada no texto (confirme antes de salvar): ${escape(meta.dateCandidate)}</small>` : ""}</label>
             <label>Acesso<select name="accessLevel">${["PESSOAL", "PRIVADO", "RESTRITO", "COMPARTILHADO"].map(value => `<option ${value === (meta.accessLevel || "PESSOAL") ? "selected" : ""}>${value}</option>`).join("")}</select></label>
@@ -140,7 +142,7 @@
         if (result.status === "error") return `<div class="archive-ai-result is-error"><b>ANÁLISE NÃO CONCLUÍDA</b><p>${escape(result.error)}</p><button type="button" class="button" data-action="ai-settings">Abrir configuração da API</button></div>`;
         const data = result.result || {};
         const fields = Object.entries(data).map(([key, value]) => `<section class="archive-ai-field"><span>${escape(labelFor(key))}</span>${renderAIValue(value)}</section>`).join("");
-        return `<div class="archive-ai-result"><small>RELATÓRIO COMPLETO · GEMINI · REVISE CADA CAMPO</small><p class="archive-ai-result__notice">Leitura automatizada: pode omitir ou interpretar incorretamente itens. Datas, números, nomes e evidências precisam de conferência humana.</p><div class="archive-ai-result__fields">${fields}</div><div class="archive-ai-result__actions"><button type="button" class="button button--primary" data-gemini-apply="${escape(id)}">Preencher campos identificados</button><button type="button" class="button" data-gemini-save-report="${escape(id)}">Salvar relatório no arquivo</button><button type="button" class="button" data-gemini-report="${escape(id)}">⇩ Baixar JSON</button></div></div>`;
+        return `<div class="archive-ai-result"><small>RELATÓRIO COMPLETO · GEMINI · REVISE CADA CAMPO</small><p class="archive-ai-result__notice">Leitura automatizada: pode omitir ou interpretar incorretamente itens. Datas, números, nomes e evidências precisam de conferência humana.</p><div class="archive-ai-result__fields">${fields}</div><div class="archive-ai-result__actions"><span class="archive-ai-result__saved">Campos preenchidos e guardados automaticamente · confira as sugestões</span><button type="button" class="button" data-gemini-report="${escape(id)}">⇩ Baixar JSON</button></div></div>`;
     }
 
     const aiLabels = { titulo_sugerido: "Título sugerido", tipo_documental: "Tipo documental", resumo_completo: "Resumo completo", finalidade_assunto: "Finalidade e assunto", pessoas: "Pessoas e papéis", organizacoes: "Organizações", identificadores: "Identificadores e números", datas_e_periodos: "Datas e períodos", valores_monetarios: "Valores monetários", enderecos_e_locais: "Endereços e locais", contatos: "Contatos", referencias_citadas: "Referências citadas", obrigacoes_e_prazos: "Obrigações e prazos", assinaturas_e_validacao: "Assinaturas e validação", dados_pessoais_ou_sensiveis: "Dados pessoais ou sensíveis", colecao_sugerida: "Coleção sugerida", tags_sugeridas: "Tags sugeridas", metadados_arquivisticos_a_confirmar: "Metadados a confirmar", pontos_ilegiveis_ou_incerto: "Pontos incertos ou ilegíveis", confianca_global: "Confiança global", valor: "Valor", evidencias: "Evidências no documento", confianca: "Confiança", nome: "Nome", papel: "Papel", tipo: "Tipo", contexto: "Contexto", responsavel: "Responsável", prazo_explicito: "Prazo explícito", descricao: "Descrição", observacao: "Observação", presente: "Identificado", indicado_no_documento: "Indicado no documento" };
@@ -162,7 +164,7 @@
         return list.filter(doc => {
             const meta = metadata(doc);
             const categoryMatch = state.category === "Todas" || meta.category === state.category;
-            const content = [doc.name, doc.type, doc.text?.slice(0, 2500), meta.category, meta.classCode, meta.producer, ...(meta.tags || [])].join(" ").toLocaleLowerCase("pt-BR");
+            const content = [doc.name, doc.type, doc.text?.slice(0, 2500), meta.category, meta.className, meta.classCode, meta.producer, meta.createdDate, meta.notes, ...(meta.tags || [])].join(" ").toLocaleLowerCase("pt-BR");
             return categoryMatch && (!query || content.includes(query));
         }).sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
     }
@@ -186,23 +188,6 @@
             const anchor = document.createElement("a"); anchor.href = url; anchor.download = file.name; anchor.click();
             window.setTimeout(() => URL.revokeObjectURL(url), 1000);
             logEvent("DOCUMENT EXPORTED", file.name);
-            return;
-        }
-        const applyAI = event.target.closest("[data-gemini-apply]");
-        if (applyAI) {
-            const id = applyAI.dataset.geminiApply;
-            const values = state.aiResults[id]?.result?.metadados_para_preenchimento;
-            const form = document.querySelector(`[data-metadata-form="${CSS.escape(id)}"]`);
-            if (!values || !form) return;
-            const fields = { category: values.colecao, classCode: values.codigo_classificacao, producer: values.produtor, createdDate: values.data_documento, accessLevel: values.nivel_acesso, accessNote: values.observacao_acesso, retentionRule: values.regra_retencao, disposition: values.destinacao, tags: Array.isArray(values.tags) ? values.tags.join(", ") : "", notes: values.notas };
-            for (const [name, value] of Object.entries(fields)) {
-                const field = form.elements.namedItem(name);
-                if (!field || value === null || value === undefined || value === "") continue;
-                if (name === "category" && !categories.includes(value)) continue;
-                field.value = value;
-            }
-            form.scrollIntoView({ behavior: "smooth", block: "start" });
-            alert("Campos identificados preenchidos como sugestões. Revise e salve a descrição para guardar as alterações.");
             return;
         }
         const report = event.target.closest("[data-gemini-report]");

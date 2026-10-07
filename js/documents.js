@@ -92,6 +92,7 @@
             sha256,
             archiveMetadata: {
                 category,
+                className: "",
                 categorySuggested: category !== "A organizar",
                 classCode: "",
                 producer: "",
@@ -126,7 +127,7 @@
     function save() { return window.DNAStorage?.saveDocuments?.(state.documents) === true; }
     function restore(records) {
         const source = Array.isArray(records) ? records : (window.DNAStorage?.restoreDocuments?.() || []);
-        state.documents = source.filter(item => item && typeof item.id === "string").map(item => ({ ...item, archiveMetadata: item.archiveMetadata || { category: "A organizar", categorySuggested: false, classCode: "", producer: "", createdDate: "", dateCandidate: "", accessLevel: "PESSOAL", accessNote: "", retentionRule: "", disposition: "", tags: item.analysis?.keywords || [], notes: "", metadataUpdatedAt: null }, analysis: item.analysis || analyzeText(item.text || "") }));
+        state.documents = source.filter(item => item && typeof item.id === "string").map(item => ({ ...item, archiveMetadata: item.archiveMetadata || { category: "A organizar", className: "", categorySuggested: false, classCode: "", producer: "", createdDate: "", dateCandidate: "", accessLevel: "PESSOAL", accessNote: "", retentionRule: "", disposition: "", tags: item.analysis?.keywords || [], notes: "", metadataUpdatedAt: null }, analysis: item.analysis || analyzeText(item.text || "") }));
         state.selectedId = null;
         emit("dna:documents-changed", { documents: getAll(), reason: "restored" });
         return getAll();
@@ -159,7 +160,7 @@
         const item = getById(id);
         if (!item || !changes || typeof changes !== "object") return false;
         const previous = { ...item.archiveMetadata };
-        const allowed = ["category", "classCode", "producer", "createdDate", "accessLevel", "accessNote", "retentionRule", "disposition", "tags", "notes", "aiAnalysis"];
+        const allowed = ["category", "className", "classCode", "producer", "createdDate", "accessLevel", "accessNote", "retentionRule", "disposition", "tags", "notes", "aiAnalysis"];
         const updated = { ...item.archiveMetadata };
         allowed.forEach(key => { if (Object.hasOwn(changes, key)) updated[key] = key === "aiAnalysis" ? changes[key] : key === "tags" ? (Array.isArray(changes[key]) ? changes[key] : String(changes[key]).split(",").map(tag => tag.trim()).filter(Boolean)) : String(changes[key] ?? "").trim(); });
         updated.categorySuggested = false;
