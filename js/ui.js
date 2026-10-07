@@ -73,9 +73,16 @@
             documentExtraction: '[data-document-extraction]',
             documentClass: '[data-document-class]',
             documentYear: '[data-document-year]',
-            documentRetention: '[data-document-retention]',
+            documentRetention: '[data-document-destination]',
+            documentRetentionRule: '[data-document-retention-rule]',
+            documentProducer: '[data-document-producer]',
+            documentAccess: '[data-document-access]',
+            documentClassCode: '[data-document-class-code]',
+            documentTags: '[data-document-tags]',
+            documentSummary: '[data-document-summary]',
             documentIntegrity: '[data-document-integrity]',
             documentRelationships: '[data-document-relationships]',
+            documentDestination: '[data-document-destination]',
 
             /* Notification */
             notification: '.notification',
@@ -622,110 +629,37 @@
     ============================================================ */
 
     function openDocument(documentData) {
-
-        if (!documentData) {
-            return false;
-        }
-
-        UI.state.currentDocument =
-            documentData;
-
-        const panel =
-            UI.elements.documentPanel;
-
-        if (!panel) {
-            return false;
-        }
-
+        if (!documentData) return false;
+        UI.state.currentDocument = documentData;
+        const panel = UI.elements.documentPanel;
+        if (!panel) return false;
+        const archive = documentData.archiveMetadata || {};
+        const ai = archive.aiAnalysis?.result || {};
+        const set = (selector, value) => setText(selector, value ?? 'Não identificado no documento');
         setText(UI.elements.documentTitle, documentData.name || 'DOCUMENTO');
-
-        setText(
-            UI.elements.documentId,
-            documentData.id ||
-            documentData.documentId ||
-            'UNKNOWN'
-        );
-
-        setText(
-            UI.elements.documentType,
-            documentData.type || documentData.detectedType ||
-            documentData.documentType ||
-            'DOCUMENT'
-        );
-
-        setText(UI.elements.documentSize, documentData.sizeFormatted || 'UNKNOWN');
-        setText(UI.elements.documentMime, documentData.mimeType || 'UNKNOWN');
-        setText(UI.elements.documentExtraction, documentData.extractionStatus || 'UNKNOWN');
-
-        setText(
-            UI.elements.documentClass,
-            documentData.class ||
-            documentData.classification ||
-            documentData.classCode ||
-            'UNKNOWN'
-        );
-
-        setText(
-            UI.elements.documentYear,
-            documentData.analysis?.years?.join(', ') ||
-            documentData.year ||
-            documentData.date ||
-            '—'
-        );
-
-        setText(
-            UI.elements.documentRetention,
-            documentData.retention ||
-            documentData.retentionType ||
-            'UNKNOWN'
-        );
-
-        const integrity =
-            documentData.integrity;
-
-        setText(
-            UI.elements.documentIntegrity,
-            integrity !== undefined
-                ? formatPercent(
-                    integrity,
-                    1
-                )
-                : '—'
-        );
-
+        setText(UI.elements.documentId, documentData.id || documentData.documentId || 'Não identificado');
+        setText(UI.elements.documentType, documentData.type || documentData.documentType || documentData.detectedType || 'Não identificado');
+        setText(UI.elements.documentSize, documentData.sizeFormatted || 'Não identificado');
+        setText(UI.elements.documentMime, documentData.mimeType || 'Não identificado');
+        const extraction = archive.aiAnalysis ? 'ANÁLISE IA CONCLUÍDA' : ({ PDF_RECEIVED: 'PDF recebido · IA pendente', BINARY_FILE_RECEIVED: 'Arquivo recebido · IA pendente', TEXT_EXTRACTED: 'Texto extraído · IA pendente' }[documentData.extractionStatus] || documentData.extractionStatus || 'Análise pendente');
+        setText(UI.elements.documentExtraction, extraction);
+        setText(UI.elements.documentClass, archive.className || archive.category || archive.classCode || documentData.classification || 'Aguardando análise da IA');
+        setText(UI.elements.documentYear, archive.createdDate || documentData.analysis?.years?.join(', ') || documentData.year || 'Não identificada no documento');
+        setText(UI.elements.documentRetention, archive.disposition || documentData.destination || 'Não identificada no documento');
+        setText(UI.elements.documentRetentionRule, archive.retentionRule || 'Não identificada no documento');
+        setText(UI.elements.documentProducer, archive.producer || 'Não identificado no documento');
+        setText(UI.elements.documentAccess, archive.accessLevel || 'PESSOAL');
+        setText(UI.elements.documentClassCode, archive.classCode || 'Será criado após análise da IA');
+        setText(UI.elements.documentTags, Array.isArray(archive.tags) && archive.tags.length ? archive.tags.join(', ') : 'Aguardando indexação');
+        setText(UI.elements.documentSummary, ai.resumo_completo || archive.notes || 'Analise o documento para criar o resumo e preencher os metadados.');
+        setText(UI.elements.documentIntegrity, documentData.sha256 ? 'SHA-256 registrado' : 'Não calculada');
         const relationships = window.DNAConnections?.getForDocument?.(documentData.id) || documentData.relationships || documentData.relatedDocuments || [];
-
-        setText(
-            UI.elements.documentRelationships,
-            Array.isArray(relationships)
-                ? formatNumber(
-                    relationships.length
-                )
-                : formatNumber(
-                    relationships
-                )
-        );
-
-        panel.classList.add(
-            'is-open'
-        );
-
-        panel.setAttribute(
-            'aria-hidden',
-            'false'
-        );
-
-        dispatch(
-            'dna:ui-document-open',
-            {
-                document:
-                    documentData
-            }
-        );
-
+        setText(UI.elements.documentRelationships, Array.isArray(relationships) ? formatNumber(relationships.length) : formatNumber(relationships));
+        panel.classList.add('is-open');
+        panel.setAttribute('aria-hidden', 'false');
+        dispatch('dna:ui-document-open', { document: documentData });
         return true;
     }
-
 
     function closeDocument() {
 
@@ -1151,6 +1085,12 @@
         );
 
 
+        document.addEventListener('dna:document-metadata-updated', event => {
+            const id = event.detail?.id;
+            if (UI.state.currentDocument?.id !== id) return;
+            const updated = window.DNADocuments?.getById?.(id);
+            if (updated) openDocument(updated);
+        });
         document.addEventListener(
             'dna:open-document',
             event => {

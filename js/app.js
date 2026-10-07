@@ -532,20 +532,20 @@
 
         set(
             "[data-document-classification]",
-            documentData.classification || "UNKNOWN"
+            documentData.archiveMetadata?.className || documentData.archiveMetadata?.category || documentData.classification || "Aguardando análise da IA"
         );
 
-        set("[data-document-class]", documentData.classification || "UNKNOWN");
-        set("[data-document-year]", documentData.analysis?.years?.join(", ") || "UNKNOWN");
+        set("[data-document-class]", documentData.archiveMetadata?.className || documentData.archiveMetadata?.category || documentData.classification || "Aguardando análise da IA");
+        set("[data-document-year]", documentData.archiveMetadata?.createdDate || documentData.analysis?.years?.join(", ") || "Não identificada no documento");
 
         set(
             "[data-document-retention]",
-            documentData.retention || "UNKNOWN"
+            documentData.archiveMetadata?.retentionRule || "Não identificada no documento"
         );
 
         set(
             "[data-document-destination]",
-            documentData.destination
+            documentData.archiveMetadata?.disposition || documentData.destination || "Não identificada no documento"
         );
 
         set(
@@ -575,6 +575,22 @@
                 ?.wordCount || 0
         );
 
+        const archive = documentData.archiveMetadata || {};
+        const ai = archive.aiAnalysis?.result || {};
+        const setArchive = (selector, value) => {
+            const node = DOM.documentPanel.querySelector(selector);
+            if (node) node.textContent = value || "Não identificado no documento";
+        };
+        setArchive("[data-document-retention-rule]", archive.retentionRule);
+        setArchive("[data-document-producer]", archive.producer);
+        setArchive("[data-document-access]", archive.accessLevel);
+        setArchive("[data-document-class-code]", archive.classCode);
+        setArchive("[data-document-tags]", Array.isArray(archive.tags) ? archive.tags.join(", ") : "");
+        setArchive("[data-document-summary]", ai.resumo_completo || archive.notes || "Clique em “Realizar guarda documental via IA” para analisar.");
+        setArchive("[data-document-integrity]", documentData.sha256 ? "SHA-256 registrado" : "Hash ainda não calculado");
+        setArchive("[data-document-extraction]", archive.aiAnalysis ? "ANÁLISE IA CONCLUÍDA" : (documentData.extractionStatus || "Aguardando análise da IA"));
+        const aiAction = DOM.documentPanel.querySelector("[data-document-ai-action]");
+        if (aiAction) aiAction.dataset.documentId = documentData.id;
         DOM.documentPanel.classList.add(
             "is-open"
         );

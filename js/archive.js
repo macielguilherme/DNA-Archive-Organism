@@ -31,7 +31,6 @@
                     <button class="archive-utility-button" data-archive-export>⇩ Exportar pacote</button>
                     <button class="archive-utility-button" data-archive-import>⇧ Importar pacote</button>
                     <input type="file" accept="application/json,.json" data-archive-import-input hidden>
-                    <button class="archive-utility-button" data-action="ai-settings">✦ Configurar análise IA</button>
                 </footer>
             </aside>`;
         document.body.append(shell);
@@ -131,7 +130,7 @@
             <label>Notas<textarea name="notes" rows="3" placeholder="Contexto, relação ou observação">${escape(meta.notes)}</textarea></label>
             <div class="archive-form-note">A coleção pode ser sugerida automaticamente pelo nome/texto. Código, produtor, acesso, prazo e destinação são seus metadados.</div>
             <button class="button button--primary" type="submit">Salvar descrição</button>
-            <button type="button" class="button archive-gemini-button" data-gemini-analyze="${escape(doc.id)}">✦ Analisar documento</button>
+            <button type="button" class="button archive-gemini-button" data-gemini-analyze="${escape(doc.id)}">✦ Realizar guarda documental via IA</button>
             ${renderAIResult(state.aiResults[doc.id] || (meta.aiAnalysis ? { status: "complete", ...meta.aiAnalysis } : null), doc.id)}
             <button type="button" class="archive-delete-button" data-archive-delete="${escape(doc.id)}">Remover este documento</button></form>`;
     }

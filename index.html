@@ -874,10 +874,15 @@
                             DESTINAÇÃO
                         </span>
 
-                        <strong data-document-retention>
+                        <strong data-document-destination>
                             —
                         </strong>
 
+                    </div>
+
+                    <div class="document-field">
+                        <span>REGRA DE RETENÇÃO</span>
+                        <strong data-document-retention-rule>Não identificada no documento</strong>
                     </div>
 
                     <div class="document-field">
@@ -934,7 +939,22 @@
 
                 </div>
 
-                <div class="document-relationships">
+
+                <button type="button" class="button button--primary document-panel__ai-action" data-document-ai-action>✦ Realizar guarda documental via IA</button>
+
+                <section class="document-panel__archive-metadata" aria-label="Metadados arquivísticos">
+                    <div class="document-panel__section-title">GESTÃO ARQUIVÍSTICA</div>
+                    <div class="document-panel__metadata-row"><span>PRODUTOR / ORIGEM</span><strong data-document-producer>Não identificado no documento</strong></div>
+                    <div class="document-panel__metadata-row"><span>ACESSO</span><strong data-document-access>PESSOAL</strong></div>
+                    <div class="document-panel__metadata-row"><span>CÓDIGO INTERNO DA CLASSE</span><strong data-document-class-code>Classe será criada pela IA</strong></div>
+                    <div class="document-panel__metadata-row"><span>INDEXAÇÃO</span><strong data-document-tags>Aguardando análise</strong></div>
+                </section>
+
+                <section class="document-panel__summary">
+                    <div class="document-panel__section-title">RESUMO DA ANÁLISE</div>
+                    <p data-document-summary>Analise o documento para criar o resumo e preencher os metadados.</p>
+                </section>
+<div class="document-relationships">
                     <span>ANÁLISE</span>
                     <strong data-document-extraction>—</strong>
                 </div>
@@ -1376,7 +1396,7 @@
          SCRIPTS
     ========================================================== -->
 
-    <script src="js/app.js?v=3"></script>
+    <script src="js/app.js?v=4"></script>
 
     <script src="js/storage.js?v=3"></script>
 
@@ -1396,7 +1416,7 @@
 
     <script src="js/archive.js"></script>
 
-    <script src="js/gemini.js?v=4"></script>
+    <script src="js/gemini.js?v=5"></script>
 
 </body>
 </html>

@@ -2,34 +2,18 @@ import http from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
 const envValue = name => { const value = process.env[name] || ''; return /^\{\{.*\}\}$/.test(value) ? '' : value; };
 const KEY = envValue('GEMINI_API_KEY');
-const PASSWORD = envValue('SITE_ACCESS_PASSWORD');
-const SECRET = envValue('SESSION_SECRET');
 const PRODUCTION = process.env.NODE_ENV === 'production';
-if (PRODUCTION && (!KEY || !PASSWORD || SECRET.length < 32)) {
-  throw new Error('Configure GEMINI_API_KEY, SITE_ACCESS_PASSWORD e SESSION_SECRET (mínimo 32 caracteres) como segredos da hospedagem.');
-}
+if (PRODUCTION && !KEY) throw new Error('Configure GEMINI_API_KEY como segredo da hospedagem.');
 const ALLOWED_MODELS = new Set(['gemini-3.5-flash-lite']);
 const MIME = { '.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon' };
 const rate = new Map();
 
 function send(res, code, data, headers = {}) { res.writeHead(code, { 'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff', ...headers }); res.end(JSON.stringify(data)); }
-function cookie(res, value, maxAge) { res.setHeader('Set-Cookie', `dna_session=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${PRODUCTION ? '; Secure' : ''}`); }
-function sign(value) { return createHmac('sha256', SECRET).update(value).digest('base64url'); }
-function sessionValid(req) {
-  if (!SECRET) return false;
-  const token = (req.headers.cookie || '').split(';').map(x => x.trim()).find(x => x.startsWith('dna_session='))?.slice(12);
-  if (!token) return false;
-  const [payload, signature] = token.split('.'); if (!payload || !signature) return false;
-  const expected = Buffer.from(sign(payload)); const actual = Buffer.from(signature);
-  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return false;
-  try { const data = JSON.parse(Buffer.from(payload, 'base64url').toString()); return data.exp > Date.now(); } catch { return false; }
-}
 function sameOrigin(req) {
   const origin = req.headers.origin; if (!origin) return false;
   const host = req.headers['x-forwarded-host']?.split(',')[0].trim() || req.headers.host;
@@ -55,19 +39,9 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
     if (url.pathname.startsWith('/api/')) {
       if (req.method !== 'GET' && !sameOrigin(req)) return send(res,403,{ message:'Origem não autorizada.' });
-      if (url.pathname === '/api/health' && req.method === 'GET') return send(res,200,{ geminiConfigured:Boolean(KEY), passwordRequired:Boolean(PASSWORD), authenticated:!PASSWORD || sessionValid(req) });
-      if (url.pathname === '/api/session' && req.method === 'POST') {
-        if (limited(req)) return send(res,429,{ message:'Muitas tentativas. Aguarde um minuto.' });
-        if (!PASSWORD || !SECRET) return send(res,503,{ message:'A hospedagem ainda não configurou o acesso seguro.' });
-        const input = await body(req,4096); const a=Buffer.from(String(input.password || '')); const b=Buffer.from(PASSWORD);
-        if (a.length !== b.length || !timingSafeEqual(a,b)) return send(res,401,{ message:'Senha incorreta.' });
-        const payload=Buffer.from(JSON.stringify({ exp:Date.now()+12*60*60*1000, nonce:randomBytes(12).toString('hex') })).toString('base64url');
-        cookie(res,`${payload}.${sign(payload)}`,12*60*60); return send(res,200,{ ok:true });
-      }
-      if (url.pathname === '/api/session' && req.method === 'DELETE') { cookie(res,'',0); return send(res,200,{ ok:true }); }
+      if (url.pathname === '/api/health' && req.method === 'GET') return send(res,200,{ geminiConfigured:Boolean(KEY), model:'gemini-3.5-flash-lite' });
       if (url.pathname === '/api/gemini' && req.method === 'POST') {
         if (limited(req)) return send(res,429,{ message:'Limite de solicitações atingido. Aguarde um minuto.' });
-        if (PASSWORD && !sessionValid(req)) return send(res,401,{ message:'Entre no site novamente.' });
         if (!KEY) return send(res,503,{ message:'A hospedagem ainda não configurou a chave Gemini.' });
         const input=await body(req); const model=ALLOWED_MODELS.has(input.model) ? input.model : 'gemini-3.5-flash-lite';
         if (typeof input.prompt !== 'string' || input.prompt.length > 180_000) return send(res,400,{ message:'Texto de análise inválido ou muito longo.' });

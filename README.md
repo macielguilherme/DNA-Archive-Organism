@@ -9,13 +9,12 @@ Use uma hospedagem que execute aplicações Node.js (Node 20 ou superior), aceit
 | Variável | Valor |
 | --- | --- |
 | `GEMINI_API_KEY` | Uma chave nova da Gemini API, gerada no Google AI Studio |
-| `SITE_ACCESS_PASSWORD` | Uma senha longa e exclusiva para proteger o site e o uso da cota da API |
-| `SESSION_SECRET` | Um segredo aleatório com pelo menos 32 caracteres |
 | `NODE_ENV` | `production` |
 
-O servidor usa a variável `PORT` fornecida pela hospedagem. O arquivo `.env` ignorado pelo Git é para desenvolvimento: substitua os marcadores nele se quiser executar localmente. **Não envie `.env` ao repositório nem à hospedagem**; em produção, configure os valores no painel privado da plataforma. `.env.example` contém apenas marcadores. Em produção, o servidor se recusa a iniciar sem chave, senha, segredo de sessão suficiente.
+O servidor usa a variável `PORT` fornecida pela hospedagem. O arquivo `.env` ignorado pelo Git é para desenvolvimento: substitua os marcadores nele se quiser executar localmente. **Não envie `.env` ao repositório nem à hospedagem**; em produção, configure os valores no painel privado da plataforma. `.env.example` contém apenas marcadores. Em produção, o servidor se recusa a iniciar sem a chave da Gemini API.
 
-Depois de publicar, abra o endereço HTTPS do site, selecione **Gemini** e entre com `SITE_ACCESS_PASSWORD`. **Testar conexão** confirma se o modelo e a chave estão funcionando. O proxy limita solicitações, aceita apenas os modelos disponíveis na interface e mantém a chave exclusivamente no servidor.
+
+Depois de publicar, abra o endereço HTTPS, selecione um documento e clique em **Realizar guarda documental via IA**. O Gemini 3.5 Flash-Lite preencherá os metadados arquivísticos automaticamente; a chave permanece exclusivamente no servidor.
 
 ## GitHub e publicação por PowerShell
 
@@ -33,8 +32,6 @@ git remote add origin https://github.com/SEU_USUARIO/DNA-Archive-Organism.git
 git push -u origin main
 ```
 
-Troque `SEU_USUARIO` pelo seu nome de usuário do GitHub. Antes do `push`, confirme que `git status --short --branch` está limpo e que `git check-ignore .env` mostra `.env`. Depois, no Render, escolha **New > Blueprint** e conecte o repositório; preencha `GEMINI_API_KEY` e `SITE_ACCESS_PASSWORD` nos campos privados do serviço. `SESSION_SECRET` é gerado pelo blueprint. Abra o endereço HTTPS que o Render mostrar após a publicação.
-Confirme que `git status --short --branch` está limpo e que `git check-ignore .env` mostra que o segredo está ignorado. Crie o repositório como privado. Depois, no Render, escolha **New > Blueprint** e conecte o repositório; preencha `GEMINI_API_KEY` e `SITE_ACCESS_PASSWORD` nos campos privados do serviço. `SESSION_SECRET` é gerado pelo blueprint. Abra o endereço HTTPS que o Render mostrar após a publicação.
 
 O site mantém os documentos no navegador de cada usuário. Colocar o código no GitHub ou servir pelo Render não envia os documentos ao repositório nem sincroniza o acervo.
 ## Chave que apareceu em uma conversa

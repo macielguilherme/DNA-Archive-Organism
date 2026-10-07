@@ -2,7 +2,6 @@
 (() => {
     "use strict";
     const model = "gemini-3.5-flash-lite";
-    const consentedDocuments = new Set();
     let busy = false;
 
     function mount() {
@@ -10,7 +9,7 @@
         modal.id = "gemini-settings";
         modal.className = "gemini-modal";
         modal.setAttribute("aria-hidden", "true");
-        modal.innerHTML = `<div class="gemini-modal__scrim" data-gemini-close></div><div class="gemini-modal__card" role="dialog" aria-modal="true" aria-labelledby="gemini-title"><header><div><span>ANÁLISE DOCUMENTAL</span><h2 id="gemini-title">Google Gemini</h2></div><button type="button" data-gemini-close aria-label="Fechar">×</button></header><p>A conexão usa uma chave protegida no servidor da hospedagem. Ela nunca é enviada ao navegador.</p><div data-access-panel hidden><label for="site-password">SENHA DE ACESSO DO SITE</label><input id="site-password" type="password" autocomplete="current-password" placeholder="Senha definida na hospedagem"><button type="button" class="button button--primary" data-login>Entrar</button></div><div class="gemini-model-badge"><span>MODELO ATIVO</span><strong>Gemini 3.5 Flash-Lite</strong></div><div class="gemini-modal__security"><b>Envio e privacidade</b><p>O documento ou seu texto é enviado ao Google Gemini quando você confirma a análise. Os documentos arquivados continuam guardados neste navegador; a hospedagem não sincroniza nem recebe o acervo.</p></div><footer><button type="button" class="button" data-gemini-logout>Sair</button><button type="button" class="button" data-gemini-test>Testar conexão</button></footer><small data-gemini-status>Verificando serviço…</small></div>`;
+        modal.innerHTML = `<div class="gemini-modal__scrim" data-gemini-close></div><div class="gemini-modal__card" role="dialog" aria-modal="true" aria-labelledby="gemini-title"><header><div><span>ANÁLISE DOCUMENTAL</span><h2 id="gemini-title">Google Gemini</h2></div><button type="button" data-gemini-close aria-label="Fechar">×</button></header><p>A conexão usa uma chave protegida no servidor da hospedagem. Ela nunca é enviada ao navegador.</p><div class="gemini-model-badge"><span>MODELO ATIVO</span><strong>Gemini 3.5 Flash-Lite</strong></div><div class="gemini-modal__security"><b>Envio e privacidade</b><p>Ao clicar em “Realizar guarda documental via IA”, o documento ou seu texto é enviado ao Google Gemini para análise. Os documentos arquivados continuam guardados neste navegador; a hospedagem não sincroniza nem recebe o acervo.</p></div><footer><button type="button" class="button" data-gemini-test>Testar conexão</button></footer><small data-gemini-status>Verificando serviço…</small></div>`;
         document.body.append(modal);
         document.addEventListener("click", handleClick);
 
@@ -37,15 +36,15 @@
     function handleClick(event) {
         if (event.target.closest('[data-action="ai-settings"]')) { event.preventDefault(); open(); return; }
         if (event.target.closest("[data-gemini-close]")) { close(); return; }
-        if (event.target.closest("[data-login]")) { login(); return; }
-        if (event.target.closest("[data-gemini-logout]")) { logout(); return; }
         if (event.target.closest("[data-gemini-test]")) { testConnection(); return; }
+        const documentAction = event.target.closest("[data-document-ai-action]");
         const analyzeButton = event.target.closest("[data-gemini-analyze]");
-        if (analyzeButton) document.dispatchEvent(new CustomEvent("dna:gemini-analyze", { detail: { id: analyzeButton.dataset.geminiAnalyze } }));
+        if (documentAction) document.dispatchEvent(new CustomEvent("dna:gemini-analyze", { detail: { id: documentAction.dataset.documentId } }));
+        else if (analyzeButton) document.dispatchEvent(new CustomEvent("dna:gemini-analyze", { detail: { id: analyzeButton.dataset.geminiAnalyze } }));
     }
 
     async function requestGemini(prompt, attachment = null) {
-        if (!(await ensureSession())) throw new Error("Entre no site com a senha de acesso para usar a análise.");
+        if (location.protocol === "file:") throw new Error("Abra o endereço HTTPS publicado do site; a API não funciona pelo arquivo index.html.");
         let response;
         try {
             response = await fetch("/api/gemini", {
@@ -89,36 +88,9 @@
         try {
             const response = await fetch("/api/health", { cache: "no-store" });
             const health = await response.json();
-            document.querySelector("[data-access-panel]").hidden = !health.passwordRequired || health.authenticated;
             status(health.geminiConfigured ? "Serviço configurado e pronto." : "A hospedagem ainda não configurou GEMINI_API_KEY.", health.geminiConfigured ? "ok" : "error");
         } catch { status("Não foi possível alcançar o servidor da hospedagem.", "error"); }
     }
-    async function ensureSession() {
-        if (location.protocol === "file:") throw new Error("Abra o endereço HTTPS publicado do site; a API não funciona pelo arquivo index.html.");
-        const response = await fetch("/api/health", { cache: "no-store" });
-        const health = await response.json();
-        if (!health.passwordRequired || health.authenticated) return true;
-        open(); document.querySelector("[data-access-panel]").hidden = false; return false;
-    }
-    async function login() {
-        const password = document.querySelector("#site-password").value;
-        const button = document.querySelector("[data-login]"); button.disabled = true;
-        try {
-            const response = await fetch("/api/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }) });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.message || "Senha incorreta.");
-            document.querySelector("#site-password").value = "";
-            document.querySelector("[data-access-panel]").hidden = true;
-            status("Acesso autorizado nesta sessão.", "ok");
-        } catch (error) { status(error.message, "error"); }
-        finally { button.disabled = false; }
-    }
-    async function logout() {
-        await fetch("/api/session", { method: "DELETE" }).catch(() => {});
-        consentedDocuments.clear(); status("Sessão encerrada.", "ok");
-        document.querySelector("[data-access-panel]").hidden = false;
-    }
-
     function getAttachment(doc) {
         const mime = String(doc.mimeType || "").toLowerCase();
         const supportedImage = ["image/png", "image/jpeg", "image/webp", "image/heic", "image/heif"].includes(mime);
@@ -199,7 +171,6 @@ ${documentText}`;
     }
     async function analyze(id) {
         if (busy) return;
-        if (!(await ensureSession())) { status("Entre no site para continuar.", "error"); return; }
         const doc = window.DNADocuments?.getById?.(id);
         if (!doc) return;
         let attachment;
@@ -209,14 +180,8 @@ ${documentText}`;
             document.dispatchEvent(new CustomEvent("dna:gemini-analysis", { detail: { id, status: "error", error: "Não há texto extraído e este formato não pode ser enviado como anexo compatível. Para arquivos Word/Excel, exporte uma cópia em PDF ou texto e reimporte." } }));
             return;
         }
-        if (!consentedDocuments.has(id)) {
-            const sent = attachment ? `o arquivo original (${doc.mimeType}, ${doc.sizeFormatted || "tamanho desconhecido"})` : `todo o texto extraído (${doc.analysis?.wordCount || 0} palavras)`;
-            const accepted = confirm(`Enviar ${sent} de “${doc.name}” ao Google Gemini para leitura completa? A IA enviará o documento ao Google e preencherá automaticamente os campos arquivísticos locais; revise o resultado depois.`);
-            if (!accepted) return;
-            consentedDocuments.add(id);
-        }
         busy = true;
-        const button = document.querySelector(`[data-gemini-analyze="${CSS.escape(id)}"]`);
+        const button = [...document.querySelectorAll("[data-document-ai-action], [data-gemini-analyze]")].find(item => (item.dataset.documentId || item.dataset.geminiAnalyze) === id);
         if (button) { button.disabled = true; button.textContent = "Lendo documento…"; }
         document.dispatchEvent(new CustomEvent("dna:gemini-analysis", { detail: { id, status: "loading" } }));
         try {
@@ -233,7 +198,7 @@ ${documentText}`;
             document.dispatchEvent(new CustomEvent("dna:gemini-analysis", { detail: { id, status: "error", error: error.message } }));
         } finally {
             busy = false;
-            if (button) { button.disabled = false; button.textContent = "✦ Analisar documento"; }
+            if (button) { button.disabled = false; button.textContent = "✦ Realizar guarda documental via IA"; }
         }
     }
 
