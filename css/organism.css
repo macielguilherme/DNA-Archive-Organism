@@ -2337,3 +2337,9 @@
 @media (max-width: 640px) {
     .archive-map-key { right: 12px; bottom: 12px; gap: 6px; padding: 8px; font-size: 6px; }
 }
+
+/* Chave do mapa em papel, alinhada à identidade editorial. */
+.archive-map-key { color: #596357; border: 1px solid rgba(49,72,52,.16); background: rgba(250,248,241,.93); box-shadow: 0 5px 18px rgba(44,49,38,.09); backdrop-filter: blur(12px); }
+.archive-map-key__folio { border-color: rgba(55,91,61,.38); background: linear-gradient(145deg,#fbf8ed,#e8ede2); }
+.archive-map-key__folio::after { border-color: rgba(55,91,61,.25); background: linear-gradient(135deg,transparent 49%,#d7dfd1 50%); }
+.archive-map-key__thread { border-color: #9a7954; }
