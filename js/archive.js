@@ -140,7 +140,7 @@
         if (result.status === "error") return `<div class="archive-ai-result is-error"><b>ANÁLISE NÃO CONCLUÍDA</b><p>${escape(result.error)}</p><button type="button" class="button" data-action="ai-settings">Abrir configuração da API</button></div>`;
         const data = result.result || {};
         const fields = Object.entries(data).map(([key, value]) => `<section class="archive-ai-field"><span>${escape(labelFor(key))}</span>${renderAIValue(value)}</section>`).join("");
-        return `<div class="archive-ai-result"><small>RELATÓRIO COMPLETO · GEMINI · REVISE CADA CAMPO</small><p class="archive-ai-result__notice">Leitura automatizada: pode omitir ou interpretar incorretamente itens. Datas, números, nomes e evidências precisam de conferência humana.</p><div class="archive-ai-result__fields">${fields}</div><div class="archive-ai-result__actions"><button type="button" class="button" data-gemini-save-report="${escape(id)}">Salvar relatório no arquivo</button><button type="button" class="button" data-gemini-report="${escape(id)}">⇩ Baixar JSON</button></div></div>`;
+        return `<div class="archive-ai-result"><small>RELATÓRIO COMPLETO · GEMINI · REVISE CADA CAMPO</small><p class="archive-ai-result__notice">Leitura automatizada: pode omitir ou interpretar incorretamente itens. Datas, números, nomes e evidências precisam de conferência humana.</p><div class="archive-ai-result__fields">${fields}</div><div class="archive-ai-result__actions"><button type="button" class="button button--primary" data-gemini-apply="${escape(id)}">Preencher campos identificados</button><button type="button" class="button" data-gemini-save-report="${escape(id)}">Salvar relatório no arquivo</button><button type="button" class="button" data-gemini-report="${escape(id)}">⇩ Baixar JSON</button></div></div>`;
     }
 
     const aiLabels = { titulo_sugerido: "Título sugerido", tipo_documental: "Tipo documental", resumo_completo: "Resumo completo", finalidade_assunto: "Finalidade e assunto", pessoas: "Pessoas e papéis", organizacoes: "Organizações", identificadores: "Identificadores e números", datas_e_periodos: "Datas e períodos", valores_monetarios: "Valores monetários", enderecos_e_locais: "Endereços e locais", contatos: "Contatos", referencias_citadas: "Referências citadas", obrigacoes_e_prazos: "Obrigações e prazos", assinaturas_e_validacao: "Assinaturas e validação", dados_pessoais_ou_sensiveis: "Dados pessoais ou sensíveis", colecao_sugerida: "Coleção sugerida", tags_sugeridas: "Tags sugeridas", metadados_arquivisticos_a_confirmar: "Metadados a confirmar", pontos_ilegiveis_ou_incerto: "Pontos incertos ou ilegíveis", confianca_global: "Confiança global", valor: "Valor", evidencias: "Evidências no documento", confianca: "Confiança", nome: "Nome", papel: "Papel", tipo: "Tipo", contexto: "Contexto", responsavel: "Responsável", prazo_explicito: "Prazo explícito", descricao: "Descrição", observacao: "Observação", presente: "Identificado", indicado_no_documento: "Indicado no documento" };
@@ -186,6 +186,23 @@
             const anchor = document.createElement("a"); anchor.href = url; anchor.download = file.name; anchor.click();
             window.setTimeout(() => URL.revokeObjectURL(url), 1000);
             logEvent("DOCUMENT EXPORTED", file.name);
+            return;
+        }
+        const applyAI = event.target.closest("[data-gemini-apply]");
+        if (applyAI) {
+            const id = applyAI.dataset.geminiApply;
+            const values = state.aiResults[id]?.result?.metadados_para_preenchimento;
+            const form = document.querySelector(`[data-metadata-form="${CSS.escape(id)}"]`);
+            if (!values || !form) return;
+            const fields = { category: values.colecao, classCode: values.codigo_classificacao, producer: values.produtor, createdDate: values.data_documento, accessLevel: values.nivel_acesso, accessNote: values.observacao_acesso, retentionRule: values.regra_retencao, disposition: values.destinacao, tags: Array.isArray(values.tags) ? values.tags.join(", ") : "", notes: values.notas };
+            for (const [name, value] of Object.entries(fields)) {
+                const field = form.elements.namedItem(name);
+                if (!field || value === null || value === undefined || value === "") continue;
+                if (name === "category" && !categories.includes(value)) continue;
+                field.value = value;
+            }
+            form.scrollIntoView({ behavior: "smooth", block: "start" });
+            alert("Campos identificados preenchidos como sugestões. Revise e salve a descrição para guardar as alterações.");
             return;
         }
         const report = event.target.closest("[data-gemini-report]");

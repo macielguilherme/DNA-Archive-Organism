@@ -3527,3 +3527,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .archive-map-key { border-color: rgba(111,180,225,.2); background: rgba(5,12,20,.9); box-shadow: 0 8px 28px rgba(0,0,0,.38); backdrop-filter: blur(12px); }
 :focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
 @media (max-width: 760px) { .app { min-width: 0; } .topbar { background: rgba(5,10,17,.97); } }
+
+.gemini-model-badge { display: grid; gap: 5px; margin-top: 15px; padding: 11px 12px; border: 1px solid rgba(166,108,255,.2); border-radius: 8px; background: rgba(63,41,94,.13); }
+.gemini-model-badge span { color: #9e87c9; font: 8px var(--mono); letter-spacing: .12em; }
+.gemini-model-badge strong { color: #e1d5ff; font-size: 12px; font-weight: 550; }

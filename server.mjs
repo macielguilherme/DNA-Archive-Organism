@@ -14,7 +14,7 @@ const PRODUCTION = process.env.NODE_ENV === 'production';
 if (PRODUCTION && (!KEY || !PASSWORD || SECRET.length < 32)) {
   throw new Error('Configure GEMINI_API_KEY, SITE_ACCESS_PASSWORD e SESSION_SECRET (mínimo 32 caracteres) como segredos da hospedagem.');
 }
-const ALLOWED_MODELS = new Set(['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash']);
+const ALLOWED_MODELS = new Set(['gemini-3.5-flash-lite']);
 const MIME = { '.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon' };
 const rate = new Map();
 
@@ -69,7 +69,7 @@ const server = http.createServer(async (req, res) => {
         if (limited(req)) return send(res,429,{ message:'Limite de solicitações atingido. Aguarde um minuto.' });
         if (PASSWORD && !sessionValid(req)) return send(res,401,{ message:'Entre no site novamente.' });
         if (!KEY) return send(res,503,{ message:'A hospedagem ainda não configurou a chave Gemini.' });
-        const input=await body(req); const model=ALLOWED_MODELS.has(input.model) ? input.model : 'gemini-3.8-flash';
+        const input=await body(req); const model=ALLOWED_MODELS.has(input.model) ? input.model : 'gemini-3.5-flash-lite';
         if (typeof input.prompt !== 'string' || input.prompt.length > 180_000) return send(res,400,{ message:'Texto de análise inválido ou muito longo.' });
         const parts=[{ text:input.prompt }];
         if (input.attachment) {
